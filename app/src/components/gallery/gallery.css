@@ -1,0 +1,81 @@
+/**
+ * Justified-masonry History gallery — presentation-only styling that isn't
+ * expressible as plain Tailwind utilities (the placeholder shimmer keyframes,
+ * the media fade-in, and the content-visibility hint). Colours reference the
+ * global Quanta `--hf-*` custom properties. Imported directly by the gallery
+ * module (Vite injects it); it intentionally does NOT touch the shared
+ * `styles.css` entry. Class names are namespaced `qg-` (quanta-gallery).
+ */
+
+/* Scroll viewport — the windowed content lives inside an absolutely-sized
+ * sizer, so tiles never trigger layout of their neighbours. */
+.qg-viewport {
+  overscroll-behavior: contain;
+  will-change: scroll-position;
+}
+
+/* One tile shell — absolutely positioned by the engine's computed rect.
+ * `content-visibility` lets the browser skip rendering work for the (rare)
+ * off-screen tile still mounted during a fast fling. */
+.qg-tile {
+  position: absolute;
+  overflow: hidden;
+  border-radius: var(--hf-radius-300);
+  background-color: var(--qg-tint, var(--hf-color-background-secondary));
+  content-visibility: auto;
+}
+
+/* Cheap solid placeholder shown before media hydrates / during fast scroll. */
+.qg-placeholder {
+  position: absolute;
+  inset: 0;
+  background-color: var(--qg-tint, var(--hf-color-background-secondary));
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--qg-tint, #333) 88%, black) 0%,
+    color-mix(in oklab, var(--qg-tint, #333) 100%, white 6%) 100%
+  );
+}
+
+/* A subtle sweep while a fast fling is in progress, so the placeholders read
+ * as "loading" rather than broken. Honors reduced-motion. */
+.qg-placeholder[data-shimmer='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    var(--hf-color-transparent-light-05) 50%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  animation: qg-shimmer 1.1s ease-in-out infinite;
+}
+
+@keyframes qg-shimmer {
+  0% { background-position: 180% 0; }
+  100% { background-position: -80% 0; }
+}
+
+/* Media fades in once loaded so a hydrating tile doesn't pop. */
+.qg-media {
+  opacity: 0;
+  transition: opacity var(--hf-duration-400, 200ms) ease-out;
+}
+.qg-media[data-loaded='true'] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qg-viewport {
+    scroll-behavior: auto;
+  }
+  .qg-placeholder[data-shimmer='true']::after {
+    animation: none;
+  }
+  .qg-media {
+    transition: none;
+    opacity: 1;
+  }
+}
