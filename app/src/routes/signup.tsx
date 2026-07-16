@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { getMe, signup } from "../lib/api/auth.functions";
 import { Logo, PrimaryCTA, Spinner } from "../components/sp/ui";
+import BorderGlow from "../components/reactbits/BorderGlow";
 import { Field } from "./login";
 
 export const Route = createFileRoute("/signup")({
@@ -54,7 +55,16 @@ function SignupPage() {
       </header>
 
       <div className="flex flex-1 items-center justify-center px-5 py-10">
-        <div className="w-full max-w-sm">
+        <BorderGlow
+          glowColor="350 100 68"
+          colors={["#ff5d73", "#ff9c5b", "#33e6c4"]}
+          backgroundColor="#141026"
+          borderRadius={22}
+          glowRadius={38}
+          animated
+          className="w-full max-w-sm"
+        >
+          <div className="p-7">
           <h1 className="font-display text-3xl font-bold">Create your profile</h1>
           <p className="mt-2 text-sm text-[var(--sp-muted)]">
             Two minutes to a feed that knows what you play.
@@ -103,7 +113,8 @@ function SignupPage() {
               Log in
             </Link>
           </p>
-        </div>
+          </div>
+        </BorderGlow>
       </div>
     </div>
   );

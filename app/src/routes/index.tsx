@@ -1,7 +1,30 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 
 import { getMe } from "../lib/api/auth.functions";
-import { DifficultyMeter, Logo, PrimaryCTA, SongCover, cx } from "../components/sp/ui";
+import { DifficultyMeter, Logo, PrimaryCTA, SongCover } from "../components/sp/ui";
+import BorderGlow from "../components/reactbits/BorderGlow";
+import GlassIcons, { type GlassIconsItem } from "../components/reactbits/GlassIcons";
+
+// Mesh-gradient border colors for BorderGlow (brand: coral → amber → aqua).
+const GLOW_MESH = ["#ff5d73", "#ff9c5b", "#33e6c4"];
+const STEP_GLOWS = ["350 100 68", "22 100 68", "169 78 55"];
+
+function I({ d }: { d: string }) {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+
+const PILLARS: GlassIconsItem[] = [
+  { label: "Discover", color: "linear-gradient(#ff5d73, #ff9c5b)", icon: <I d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18m3.5 5.5L13 13l-4.5 2.5L11 11z" /> },
+  { label: "Techniques", color: "linear-gradient(#33e6c4, #1fb6d6)", icon: <I d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0m12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0" /> },
+  { label: "Difficulty", color: "linear-gradient(#ffc24b, #ff9c5b)", icon: <I d="M4 20v-5m5 5V9m5 11V4m5 16v-8" /> },
+  { label: "Library", color: "linear-gradient(#7c86ff, #5b6bff)", icon: <I d="M4 19V6a2 2 0 0 1 2-2h13v15M6 17h13M6 21h13a2 2 0 0 0 2-2" /> },
+  { label: "Comments", color: "linear-gradient(#ff5d73, #c65bff)", icon: <I d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /> },
+  { label: "Reputation", color: "linear-gradient(#33e6c4, #7ee06a)", icon: <I d="M12 2 4 5v6c0 5 3.4 8.6 8 11 4.6-2.4 8-6 8-11V5z M9 12l2 2 4-4" /> },
+];
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -133,13 +156,38 @@ function Landing() {
           How it works
         </h2>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {STEPS.map((s) => (
-            <div key={s.n} className="sp-card p-6">
-              <div className="font-display sp-gradient-text text-3xl font-bold">{s.n}</div>
-              <h3 className="font-display mt-3 text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--sp-muted)]">{s.body}</p>
-            </div>
+          {STEPS.map((s, i) => (
+            <BorderGlow
+              key={s.n}
+              glowColor={STEP_GLOWS[i]}
+              colors={GLOW_MESH}
+              backgroundColor="#141733"
+              borderRadius={16}
+              glowRadius={26}
+              coneSpread={30}
+              edgeSensitivity={26}
+            >
+              <div className="p-6">
+                <div className="font-display sp-gradient-text text-3xl font-bold">{s.n}</div>
+                <h3 className="font-display mt-3 text-lg font-semibold">{s.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--sp-muted)]">{s.body}</p>
+              </div>
+            </BorderGlow>
           ))}
+        </div>
+      </section>
+
+      {/* Pillars — liquid-glass icon buttons */}
+      <section className="mx-auto w-full max-w-4xl px-5 py-12 text-center">
+        <h2 className="font-display text-3xl font-bold leading-tight">
+          One home for everything you play
+        </h2>
+        <p className="mx-auto mt-3 max-w-md text-[15px] text-[var(--sp-muted)]">
+          Hover to explore. Your feed, your set list, community difficulty, technique tags, and the
+          conversation — all in one place.
+        </p>
+        <div className="mt-4">
+          <GlassIcons items={PILLARS} className="mx-auto max-w-2xl" />
         </div>
       </section>
 
@@ -180,27 +228,38 @@ function Landing() {
 
       {/* Final CTA */}
       <section className="mx-auto w-full max-w-6xl px-5 py-16">
-        <div
-          className={cx(
-            "relative overflow-hidden rounded-3xl border border-[var(--sp-line-strong)] p-10 text-center md:p-16",
-          )}
-          style={{
-            background:
-              "radial-gradient(120% 140% at 50% 0%, rgba(255,93,115,0.22), transparent 60%), linear-gradient(180deg, var(--sp-surface), var(--sp-bg-2))",
-          }}
+        <BorderGlow
+          glowColor="350 100 68"
+          colors={GLOW_MESH}
+          backgroundColor="#141026"
+          borderRadius={28}
+          glowRadius={46}
+          glowIntensity={1.1}
+          coneSpread={26}
         >
-          <h2 className="font-display mx-auto max-w-2xl text-4xl font-bold leading-tight">
-            Your next favorite song is one you haven&apos;t learned yet.
-          </h2>
-          <p className="mx-auto mt-4 max-w-lg text-[15px] text-[var(--sp-muted)]">
-            Build your profile in a minute. The feed does the rest.
-          </p>
-          <div className="mt-8 flex justify-center">
-            <Link to="/signup">
-              <PrimaryCTA>Create your SoundProfile</PrimaryCTA>
-            </Link>
+          <div className="relative overflow-hidden p-10 text-center md:p-16">
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(120% 140% at 50% 0%, rgba(255,93,115,0.20), transparent 60%)",
+              }}
+            />
+            <div className="relative">
+              <h2 className="font-display mx-auto max-w-2xl text-4xl font-bold leading-tight">
+                Your next favorite song is one you haven&apos;t learned yet.
+              </h2>
+              <p className="mx-auto mt-4 max-w-lg text-[15px] text-[var(--sp-muted)]">
+                Build your profile in a minute. The feed does the rest.
+              </p>
+              <div className="mt-8 flex justify-center">
+                <Link to="/signup">
+                  <PrimaryCTA>Create your SoundProfile</PrimaryCTA>
+                </Link>
+              </div>
+            </div>
           </div>
-        </div>
+        </BorderGlow>
         <footer className="mt-12 flex flex-col items-center gap-2 border-t border-[var(--sp-line)] pt-8 text-center text-sm text-[var(--sp-faint)]">
           <Logo size={22} />
           <p>Made for musicians who are always learning.</p>
