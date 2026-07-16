@@ -291,6 +291,42 @@ export function InstrumentChip({
   );
 }
 
+export function RepBadge({
+  reputation,
+  isModerator,
+}: {
+  reputation: number;
+  isModerator?: boolean;
+}) {
+  if (isModerator) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full border border-[var(--sp-aqua)]/40 bg-[var(--sp-aqua)]/12 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--sp-aqua)]"
+        title={`Trusted tagger · ${reputation} rep`}
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2 4 5v6c0 5 3.4 8.6 8 11 4.6-2.4 8-6 8-11V5z" />
+        </svg>
+        {reputation}
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+        reputation < 0
+          ? "bg-[var(--sp-coral)]/12 text-[var(--sp-coral)]"
+          : "bg-white/[0.06] text-[var(--sp-muted)]",
+      )}
+      title={`${reputation} reputation`}
+    >
+      <span aria-hidden>★</span>
+      {reputation}
+    </span>
+  );
+}
+
 export function GenreTag({ genre }: { genre: string }) {
   if (!genre) return null;
   return (

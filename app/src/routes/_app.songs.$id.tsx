@@ -2,9 +2,13 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { difficultyLabel } from "../lib/catalog";
+import { getSongExtras } from "../lib/api/annotations.functions";
+import { getComments } from "../lib/api/comments.functions";
 import { getInstruments, getMyProfile } from "../lib/api/profile.functions";
 import { getSongDetail, removeUserSong } from "../lib/api/songs.functions";
 import { AddSongDialog } from "../components/sp/AddSongDialog";
+import { CommentsPanel } from "../components/sp/CommentsPanel";
+import { TechniquesPanel } from "../components/sp/TechniquesPanel";
 import {
   Avatar,
   DifficultyMeter,
@@ -18,19 +22,28 @@ import {
 export const Route = createFileRoute("/_app/songs/$id")({
   loader: async ({ params }) => {
     const songId = Number(params.id);
-    if (!Number.isFinite(songId)) return { detail: null, instruments: [], myInstrumentIds: [] };
-    const [detail, instruments, profile] = await Promise.all([
+    if (!Number.isFinite(songId))
+      return { detail: null, instruments: [], myInstrumentIds: [], extras: null, comments: [] };
+    const [detail, instruments, profile, extras, comments] = await Promise.all([
       getSongDetail({ data: { songId } }),
       getInstruments(),
       getMyProfile(),
+      getSongExtras({ data: { songId } }),
+      getComments({ data: { songId } }),
     ]);
-    return { detail, instruments, myInstrumentIds: profile.instruments.map((i) => i.id) };
+    return {
+      detail,
+      instruments,
+      myInstrumentIds: profile.instruments.map((i) => i.id),
+      extras,
+      comments,
+    };
   },
   component: SongPage,
 });
 
 function SongPage() {
-  const { detail, instruments, myInstrumentIds } = Route.useLoaderData();
+  const { detail, instruments, myInstrumentIds, extras, comments } = Route.useLoaderData();
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -174,6 +187,8 @@ function SongPage() {
         </div>
       )}
 
+      {extras && <TechniquesPanel songId={song.id} extras={extras} />}
+
       {/* Players */}
       <div className="mt-8">
         <h2 className="font-display mb-3 text-lg font-semibold">Who plays it</h2>
@@ -210,6 +225,8 @@ function SongPage() {
           </ul>
         )}
       </div>
+
+      {extras && <CommentsPanel songId={song.id} comments={comments} viewer={extras.viewer} />}
 
       <AddSongDialog
         open={dialogOpen}

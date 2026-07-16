@@ -100,3 +100,57 @@ export interface SongDetail {
 export interface SearchSong extends SongStat {
   inLibrary: boolean;
 }
+
+/* ── Technique tags, reputation, comments ─────────────────────────────── */
+
+export interface TechniqueTag {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface AnnotationAuthor {
+  username: string;
+  displayName: string;
+  avatarHue: number;
+  reputation: number;
+  isModerator: boolean;
+}
+
+export interface SongAnnotation {
+  author: AnnotationAuthor;
+  note: string;
+  tags: TechniqueTag[];
+  likes: number;
+  dislikes: number;
+  myVote: number; // -1 | 0 | 1
+  netNegative: boolean; // dislikes > likes → unlocked for rewrite
+  mine: boolean; // the viewer authored this
+  updatedAt: string;
+}
+
+export interface ViewerMeta {
+  userId: number;
+  reputation: number;
+  isModerator: boolean; // rep >= MOD threshold
+  banned: boolean;
+}
+
+// Everything the song page needs for the techniques panel.
+export interface SongExtras {
+  annotation: SongAnnotation | null;
+  vocabulary: TechniqueTag[];
+  canEdit: boolean; // can the viewer create/rewrite the annotation right now
+  viewer: ViewerMeta;
+}
+
+export interface Comment {
+  id: number;
+  username: string;
+  displayName: string;
+  avatarHue: number;
+  reputation: number;
+  body: string;
+  createdAt: string;
+  canDelete: boolean;
+}

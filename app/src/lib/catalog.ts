@@ -44,3 +44,13 @@ export function initials(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Deterministic short date from a "YYYY-MM-DD ..." string (SSR-safe, no locale).
+export function shortDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return "";
+  const month = MONTHS[Number(m[2]) - 1] ?? "";
+  return `${month} ${Number(m[3])}`;
+}
