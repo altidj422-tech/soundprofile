@@ -38,7 +38,17 @@
   // Non-secret identity for local dev/build; the deploy sets the real values.
   // SECRETS (e.g. the fnf token) are NEVER here and NEVER in the Worker — the
   // platform Outbound Worker injects them on server-side egress.
-  "vars": { "HF_ENV": "dev", "APP_SLUG": "app-slug-placeholder" }
+  "vars": { "HF_ENV": "dev", "APP_SLUG": "app-slug-placeholder" },
+
+  // Local-dev only D1 binding (deploy regenerates this file and ignores it).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "soundprofile-local",
+      "database_id": "local-soundprofile",
+      "migrations_dir": "migrations"
+    }
+  ]
 
   // ── OPT-IN INFRA (off by default) ────────────────────────────────
   // Declare the service in app.manifest.json; the deploy injects the real
