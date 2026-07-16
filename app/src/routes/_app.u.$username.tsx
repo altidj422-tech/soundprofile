@@ -35,7 +35,7 @@ function PublicProfile() {
   const { user, instruments, songs, stats, isMe } = profile;
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-8 lg:py-10">
+    <div className="mx-auto max-w-3xl px-5 pb-28 pt-8 lg:pb-12 lg:pt-10">
       <Link to="/discover" className="text-sm font-medium text-[var(--sp-faint)] hover:text-[var(--sp-muted)]">
         ← Back to feed
       </Link>

@@ -60,7 +60,7 @@ function Library() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-5 py-8 lg:py-10">
+    <div className="mx-auto max-w-4xl px-5 pb-28 pt-8 lg:pb-12 lg:pt-10">
       <h1 className="font-display text-3xl font-bold">Library</h1>
       <p className="mt-1.5 text-[15px] text-[var(--sp-muted)]">
         Find songs to add to your set, or log one that isn&apos;t here yet.

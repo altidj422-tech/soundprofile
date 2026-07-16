@@ -46,7 +46,7 @@ function SongPage() {
   const { song, players, byInstrument, mine } = detail;
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-8 lg:py-10">
+    <div className="mx-auto max-w-3xl px-5 pb-28 pt-8 lg:pb-12 lg:pt-10">
       <Link to="/discover" className="text-sm font-medium text-[var(--sp-faint)] hover:text-[var(--sp-muted)]">
         ← Back to feed
       </Link>
@@ -54,7 +54,9 @@ function SongPage() {
       {/* Hero */}
       <div className="mt-4 overflow-hidden rounded-3xl border border-[var(--sp-line)]">
         <div className="relative h-44 sm:h-56">
-          <SongCover hue={song.hue} title={song.title} className="absolute inset-0 h-full w-full" rounded="" />
+          <div className="absolute inset-0">
+            <SongCover hue={song.hue} title={song.title} className="h-full w-full" rounded="" />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--sp-bg-2)] via-transparent to-transparent" />
         </div>
         <div className="bg-[var(--sp-bg-2)] p-5 sm:p-6">

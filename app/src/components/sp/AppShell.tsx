@@ -103,7 +103,7 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
       </aside>
 
       {/* Main */}
-      <main className="min-w-0 flex-1 pb-24 lg:pb-0">{children}</main>
+      <main className="min-w-0 flex-1">{children}</main>
 
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t border-[var(--sp-line)] bg-[var(--sp-bg)]/90 backdrop-blur lg:hidden">

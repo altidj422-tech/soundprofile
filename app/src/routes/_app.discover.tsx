@@ -122,12 +122,9 @@ function FeedCard({
   const { song, reason, matchingInstruments } = rec;
   return (
     <article className="sp-snap relative h-[calc(100dvh-118px)] w-full lg:h-dvh">
-      <SongCover
-        hue={song.hue}
-        title={song.title}
-        className="absolute inset-0 h-full w-full"
-        rounded=""
-      />
+      <div className="absolute inset-0">
+        <SongCover hue={song.hue} title={song.title} className="h-full w-full" rounded="" />
+      </div>
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,14,26,0.55)_0%,rgba(11,14,26,0.1)_28%,rgba(11,14,26,0.25)_55%,rgba(11,14,26,0.92)_100%)]" />
 
       <div className="relative mx-auto flex h-full max-w-xl flex-col justify-end px-6 pb-8 pt-20">

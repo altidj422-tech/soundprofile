@@ -57,7 +57,7 @@ function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-5 py-8 lg:py-10">
+    <div className="mx-auto max-w-4xl px-5 pb-28 pt-8 lg:pb-12 lg:pt-10">
       {/* Header */}
       <div className="sp-card p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
