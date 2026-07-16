@@ -27,8 +27,27 @@ export interface SongStat {
   genre: string;
   year: number | null;
   hue: number;
+  artworkUrl: string; // real album art ("" → fall back to the gradient)
+  previewUrl: string; // 30s preview ("" → none)
   players: number;
   avgDifficulty: number | null; // 1..5 aggregate, null if never rated
+}
+
+// A search hit from the external music catalog (not yet in our DB).
+export interface CatalogTrack {
+  externalId: string;
+  title: string;
+  artist: string;
+  genre: string;
+  year: number | null;
+  artworkUrl: string;
+  previewUrl: string;
+  hue: number; // deterministic fallback colour
+  // annotations from our own DB, when the song already exists here:
+  songId: number | null;
+  players: number;
+  avgDifficulty: number | null;
+  inLibrary: boolean;
 }
 
 export interface MySong {

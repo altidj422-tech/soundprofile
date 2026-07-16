@@ -186,7 +186,7 @@ function Onboarding() {
                       : "border-[var(--sp-line)] bg-white/[0.02] hover:border-[var(--sp-line-strong)]",
                   )}
                 >
-                  <SongCover hue={song.hue} title={song.title} className="mb-2.5 h-24 w-full" />
+                  <SongCover hue={song.hue} title={song.title} artworkUrl={song.artworkUrl} className="mb-2.5 h-24 w-full" />
                   <div className="truncate text-sm font-semibold">{song.title}</div>
                   <div className="truncate text-xs text-[var(--sp-faint)]">{song.artist}</div>
                   {on && (

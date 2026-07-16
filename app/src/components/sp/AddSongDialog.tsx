@@ -2,14 +2,20 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 
 import type { Instrument } from "../../lib/types";
+import { addCatalogSong } from "../../lib/api/catalog.functions";
 import { addUserSong } from "../../lib/api/songs.functions";
-import { DifficultyRater, SolidCoral, SongCover, Spinner, cx } from "./ui";
+import { DifficultyRater, PreviewButton, SolidCoral, SongCover, Spinner, cx } from "./ui";
 
 export interface AddTarget {
-  id: number;
+  songId: number | null; // existing DB song, or null for a fresh catalog track
   title: string;
   artist: string;
   hue: number;
+  artworkUrl?: string;
+  previewUrl?: string;
+  genre?: string;
+  year?: number | null;
+  externalId?: string;
 }
 
 export function AddSongDialog({
@@ -50,7 +56,7 @@ export function AddSongDialog({
       setSaving(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, song?.id]);
+  }, [open, song?.songId, song?.title]);
 
   async function confirm() {
     if (!song || !instrumentId) {
@@ -60,9 +66,23 @@ export function AddSongDialog({
     setSaving(true);
     setError(null);
     try {
-      const res = await addUserSong({
-        data: { songId: song.id, instrumentId, difficulty, note },
-      });
+      const res =
+        song.songId != null
+          ? await addUserSong({ data: { songId: song.songId, instrumentId, difficulty, note } })
+          : await addCatalogSong({
+              data: {
+                title: song.title,
+                artist: song.artist,
+                genre: song.genre ?? "",
+                year: song.year ?? null,
+                artworkUrl: song.artworkUrl ?? "",
+                previewUrl: song.previewUrl ?? "",
+                externalId: song.externalId ?? "",
+                instrumentId,
+                difficulty,
+                note,
+              },
+            });
       if (!res.ok) {
         setError(res.error);
         setSaving(false);
@@ -87,7 +107,19 @@ export function AddSongDialog({
           {song && (
             <>
               <div className="flex items-center gap-3">
-                <SongCover hue={song.hue} title={song.title} className="h-14 w-14" />
+                <div className="relative h-14 w-14 shrink-0">
+                  <SongCover
+                    hue={song.hue}
+                    title={song.title}
+                    artworkUrl={song.artworkUrl}
+                    className="h-14 w-14"
+                  />
+                  {song.previewUrl && (
+                    <div className="absolute inset-0 grid place-items-center">
+                      <PreviewButton url={song.previewUrl} size={30} />
+                    </div>
+                  )}
+                </div>
                 <div className="min-w-0">
                   <Dialog.Title className="font-display truncate text-base font-semibold">
                     {song.title}

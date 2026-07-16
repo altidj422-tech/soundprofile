@@ -12,6 +12,8 @@ interface UserSongRow {
   genre: string;
   year: number | null;
   hue: number;
+  artwork_url: string;
+  preview_url: string;
   inst_id: number;
   inst_name: string;
   inst_slug: string;
@@ -24,7 +26,7 @@ export async function loadUserSongs(userId: number): Promise<MySong[]> {
   const res = await db()
     .prepare(
       `SELECT us.id AS user_song_id, us.difficulty, us.note,
-              s.id AS song_id, s.title, s.artist, s.genre, s.year, s.hue,
+              s.id AS song_id, s.title, s.artist, s.genre, s.year, s.hue, s.artwork_url, s.preview_url,
               i.id AS inst_id, i.name AS inst_name, i.slug AS inst_slug, i.emoji AS inst_emoji,
               (SELECT COUNT(DISTINCT user_id) FROM user_songs WHERE song_id = s.id) AS players,
               (SELECT AVG(difficulty) FROM user_songs WHERE song_id = s.id) AS avg_diff
@@ -47,6 +49,8 @@ export async function loadUserSongs(userId: number): Promise<MySong[]> {
       genre: r.genre,
       year: r.year,
       hue: r.hue,
+      artworkUrl: r.artwork_url ?? "",
+      previewUrl: r.preview_url ?? "",
       players: r.players,
       avgDifficulty: r.avg_diff,
     },

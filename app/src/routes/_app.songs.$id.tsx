@@ -9,6 +9,7 @@ import {
   Avatar,
   DifficultyMeter,
   EmptyState,
+  PreviewButton,
   PrimaryCTA,
   QuietGlass,
   SongCover,
@@ -55,9 +56,20 @@ function SongPage() {
       <div className="mt-4 overflow-hidden rounded-3xl border border-[var(--sp-line)]">
         <div className="relative h-44 sm:h-56">
           <div className="absolute inset-0">
-            <SongCover hue={song.hue} title={song.title} className="h-full w-full" rounded="" />
+            <SongCover
+              hue={song.hue}
+              title={song.title}
+              artworkUrl={song.artworkUrl}
+              className="h-full w-full"
+              rounded=""
+            />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--sp-bg-2)] via-transparent to-transparent" />
+          {song.previewUrl && (
+            <div className="absolute bottom-3 right-3">
+              <PreviewButton url={song.previewUrl} size={44} />
+            </div>
+          )}
         </div>
         <div className="bg-[var(--sp-bg-2)] p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -202,7 +214,14 @@ function SongPage() {
       <AddSongDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        song={{ id: song.id, title: song.title, artist: song.artist, hue: song.hue }}
+        song={{
+          songId: song.id,
+          title: song.title,
+          artist: song.artist,
+          hue: song.hue,
+          artworkUrl: song.artworkUrl,
+          previewUrl: song.previewUrl,
+        }}
         instruments={instruments}
         myInstrumentIds={myInstrumentIds}
         onAdded={() => router.invalidate()}

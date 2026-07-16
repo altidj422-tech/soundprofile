@@ -57,7 +57,14 @@ function Discover() {
   }
 
   function openAdd(rec: Recommendation) {
-    setAddTarget({ id: rec.song.id, title: rec.song.title, artist: rec.song.artist, hue: rec.song.hue });
+    setAddTarget({
+      songId: rec.song.id,
+      title: rec.song.title,
+      artist: rec.song.artist,
+      hue: rec.song.hue,
+      artworkUrl: rec.song.artworkUrl,
+      previewUrl: rec.song.previewUrl,
+    });
     setDialogOpen(true);
   }
 
@@ -101,7 +108,7 @@ function Discover() {
         instruments={data.instruments}
         myInstrumentIds={data.myInstrumentIds}
         onAdded={() => {
-          if (addTarget) remove(addTarget.id);
+          if (addTarget?.songId != null) remove(addTarget.songId);
         }}
       />
     </div>
@@ -123,8 +130,15 @@ function FeedCard({
   return (
     <article className="sp-snap relative h-[calc(100dvh-118px)] w-full lg:h-dvh">
       <div className="absolute inset-0">
-        <SongCover hue={song.hue} title={song.title} className="h-full w-full" rounded="" />
+        <SongCover
+          hue={song.hue}
+          title={song.title}
+          artworkUrl={song.artworkUrl}
+          className="h-full w-full"
+          rounded=""
+        />
       </div>
+      {song.artworkUrl && <div className="absolute inset-0 bg-black/30" />}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,14,26,0.55)_0%,rgba(11,14,26,0.1)_28%,rgba(11,14,26,0.25)_55%,rgba(11,14,26,0.92)_100%)]" />
 
       <div className="relative mx-auto flex h-full max-w-xl flex-col justify-end px-6 pb-8 pt-20">

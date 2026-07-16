@@ -12,6 +12,8 @@ interface SongMeta {
   genre: string;
   year: number | null;
   hue: number;
+  artwork_url: string;
+  preview_url: string;
 }
 
 /**
@@ -29,7 +31,9 @@ export const getRecommendations = createServerFn({ method: "GET" })
     const database = db();
 
     const [songsRes, instRes, userSongsRes, userInstRes, dismissedRes] = await Promise.all([
-      database.prepare("SELECT id, title, artist, genre, year, hue FROM songs").all<SongMeta>(),
+      database
+        .prepare("SELECT id, title, artist, genre, year, hue, artwork_url, preview_url FROM songs")
+        .all<SongMeta>(),
       database.prepare("SELECT id, name, slug, emoji FROM instruments").all<Instrument>(),
       database
         .prepare("SELECT user_id, song_id, instrument_id, difficulty FROM user_songs")
@@ -113,6 +117,8 @@ export const getRecommendations = createServerFn({ method: "GET" })
         genre: m.genre,
         year: m.year,
         hue: m.hue,
+        artworkUrl: m.artwork_url ?? "",
+        previewUrl: m.preview_url ?? "",
         players: songPlayers.get(id)?.size ?? 0,
         avgDifficulty: cnt > 0 ? (songDiffSum.get(id) ?? 0) / cnt : null,
       };

@@ -48,10 +48,12 @@ function ProfilePage() {
 
   function onRate(song: MySong) {
     setAddTarget({
-      id: song.song.id,
+      songId: song.song.id,
       title: song.song.title,
       artist: song.song.artist,
       hue: song.song.hue,
+      artworkUrl: song.song.artworkUrl,
+      previewUrl: song.song.previewUrl,
     });
     setDialogOpen(true);
   }
@@ -152,7 +154,13 @@ function ProfilePage() {
                 className="flex items-center gap-3 rounded-2xl border border-[var(--sp-line)] bg-white/[0.02] p-3"
               >
                 <Link to="/songs/$id" params={{ id: String(song.song.id) }} className="shrink-0">
-                  <SongCover hue={song.song.hue} title={song.song.title} className="h-14 w-14" showWave={false} />
+                  <SongCover
+                    hue={song.song.hue}
+                    title={song.song.title}
+                    artworkUrl={song.song.artworkUrl}
+                    className="h-14 w-14"
+                    showWave={false}
+                  />
                 </Link>
                 <div className="min-w-0 flex-1">
                   <Link

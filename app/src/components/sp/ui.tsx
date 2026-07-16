@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { avatarGradient, coverGradient, difficultyLabel, initials } from "../../lib/catalog";
 import type { Instrument } from "../../lib/types";
@@ -80,12 +80,14 @@ function waveBars(seed: number, count = 22): number[] {
 export function SongCover({
   hue,
   title,
+  artworkUrl,
   className,
   rounded = "rounded-xl",
   showWave = true,
 }: {
   hue: number;
   title: string;
+  artworkUrl?: string;
   className?: string;
   rounded?: string;
   showWave?: boolean;
@@ -97,27 +99,106 @@ export function SongCover({
       style={{ background: coverGradient(hue) }}
       aria-hidden
     >
-      <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_20%_0%,rgba(255,255,255,0.28),transparent_55%)]" />
-      {showWave && (
-        <svg
-          className="absolute inset-x-0 bottom-0 h-1/2 w-full opacity-80 mix-blend-soft-light"
-          viewBox="0 0 100 40"
-          preserveAspectRatio="none"
-        >
-          {bars.map((h, i) => (
-            <rect
-              key={i}
-              x={i * (100 / bars.length) + 0.6}
-              y={40 - h * 38}
-              width={100 / bars.length - 1.2}
-              height={h * 38}
-              rx="0.8"
-              fill="rgba(255,255,255,0.85)"
-            />
-          ))}
-        </svg>
+      {artworkUrl ? (
+        // Real album art over the gradient — if it fails to load, the gradient shows.
+        <img
+          src={artworkUrl}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      ) : (
+        <>
+          <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_20%_0%,rgba(255,255,255,0.28),transparent_55%)]" />
+          {showWave && (
+            <svg
+              className="absolute inset-x-0 bottom-0 h-1/2 w-full opacity-80 mix-blend-soft-light"
+              viewBox="0 0 100 40"
+              preserveAspectRatio="none"
+            >
+              {bars.map((h, i) => (
+                <rect
+                  key={i}
+                  x={i * (100 / bars.length) + 0.6}
+                  y={40 - h * 38}
+                  width={100 / bars.length - 1.2}
+                  height={h * 38}
+                  rx="0.8"
+                  fill="rgba(255,255,255,0.85)"
+                />
+              ))}
+            </svg>
+          )}
+        </>
       )}
     </div>
+  );
+}
+
+/* ── 30-second preview player (client-only audio) ─────────────────────── */
+export function PreviewButton({
+  url,
+  className,
+  size = 34,
+}: {
+  url: string;
+  className?: string;
+  size?: number;
+}) {
+  const ref = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      ref.current?.pause();
+    };
+  }, []);
+
+  if (!url) return null;
+
+  function toggle(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window === "undefined") return;
+    let audio = ref.current;
+    if (!audio) {
+      audio = new Audio(url);
+      audio.addEventListener("ended", () => setPlaying(false));
+      ref.current = audio;
+    }
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      void audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={playing ? "Pause preview" : "Play preview"}
+      style={{ width: size, height: size }}
+      className={cx(
+        "grid shrink-0 place-items-center rounded-full bg-white/12 text-[var(--sp-ink)] backdrop-blur transition hover:bg-white/25 active:scale-95",
+        className,
+      )}
+    >
+      {playing ? (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="5" width="4" height="14" rx="1" />
+          <rect x="14" y="5" width="4" height="14" rx="1" />
+        </svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5.5v13l11-6.5z" />
+        </svg>
+      )}
+    </button>
   );
 }
 

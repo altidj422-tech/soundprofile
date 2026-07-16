@@ -100,7 +100,13 @@ function PublicProfile() {
                 className="flex items-center gap-3 rounded-2xl border border-[var(--sp-line)] bg-white/[0.02] p-3"
               >
                 <Link to="/songs/$id" params={{ id: String(song.song.id) }} className="shrink-0">
-                  <SongCover hue={song.song.hue} title={song.song.title} className="h-12 w-12" showWave={false} />
+                  <SongCover
+                    hue={song.song.hue}
+                    title={song.song.title}
+                    artworkUrl={song.song.artworkUrl}
+                    className="h-12 w-12"
+                    showWave={false}
+                  />
                 </Link>
                 <div className="min-w-0 flex-1">
                   <Link

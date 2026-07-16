@@ -19,6 +19,8 @@ interface SearchRow {
   genre: string;
   year: number | null;
   hue: number;
+  artwork_url: string;
+  preview_url: string;
   players: number;
   avg_diff: number | null;
   in_lib: number;
@@ -36,7 +38,7 @@ export const searchSongs = createServerFn({ method: "GET" })
     const like = `%${data.q.replace(/[%_]/g, "")}%`;
     const res = await db()
       .prepare(
-        `SELECT s.id, s.title, s.artist, s.genre, s.year, s.hue,
+        `SELECT s.id, s.title, s.artist, s.genre, s.year, s.hue, s.artwork_url, s.preview_url,
                 (SELECT COUNT(DISTINCT user_id) FROM user_songs WHERE song_id = s.id) AS players,
                 (SELECT AVG(difficulty) FROM user_songs WHERE song_id = s.id) AS avg_diff,
                 EXISTS(SELECT 1 FROM user_songs WHERE song_id = s.id AND user_id = ?) AS in_lib
@@ -54,6 +56,8 @@ export const searchSongs = createServerFn({ method: "GET" })
       genre: r.genre,
       year: r.year,
       hue: r.hue,
+      artworkUrl: r.artwork_url ?? "",
+      previewUrl: r.preview_url ?? "",
       players: r.players,
       avgDifficulty: r.avg_diff,
       inLibrary: r.in_lib === 1,
@@ -67,7 +71,7 @@ export const getSongDetail = createServerFn({ method: "GET" })
     const database = db();
     const songRow = await database
       .prepare(
-        `SELECT s.id, s.title, s.artist, s.genre, s.year, s.hue,
+        `SELECT s.id, s.title, s.artist, s.genre, s.year, s.hue, s.artwork_url, s.preview_url,
                 (SELECT COUNT(DISTINCT user_id) FROM user_songs WHERE song_id = s.id) AS players,
                 (SELECT AVG(difficulty) FROM user_songs WHERE song_id = s.id) AS avg_diff
          FROM songs s WHERE s.id = ?`,
@@ -80,6 +84,8 @@ export const getSongDetail = createServerFn({ method: "GET" })
         genre: string;
         year: number | null;
         hue: number;
+        artwork_url: string;
+        preview_url: string;
         players: number;
         avg_diff: number | null;
       }>();
@@ -92,6 +98,8 @@ export const getSongDetail = createServerFn({ method: "GET" })
       genre: songRow.genre,
       year: songRow.year,
       hue: songRow.hue,
+      artworkUrl: songRow.artwork_url ?? "",
+      previewUrl: songRow.preview_url ?? "",
       players: songRow.players,
       avgDifficulty: songRow.avg_diff,
     };
