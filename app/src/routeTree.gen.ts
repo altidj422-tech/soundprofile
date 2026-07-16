@@ -16,7 +16,6 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiDebugCatalogRouteImport } from './routes/api/debug-catalog'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppLibraryRouteImport } from './routes/_app.library'
 import { Route as AppDiscoverRouteImport } from './routes/_app.discover'
@@ -57,11 +56,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiDebugCatalogRoute = ApiDebugCatalogRouteImport.update({
-  id: '/api/debug-catalog',
-  path: '/api/debug-catalog',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -98,7 +92,6 @@ export interface FileRoutesByFullPath {
   '/discover': typeof AppDiscoverRoute
   '/library': typeof AppLibraryRoute
   '/profile': typeof AppProfileRoute
-  '/api/debug-catalog': typeof ApiDebugCatalogRoute
   '/songs/$id': typeof AppSongsIdRoute
   '/u/$username': typeof AppUUsernameRoute
 }
@@ -112,7 +105,6 @@ export interface FileRoutesByTo {
   '/discover': typeof AppDiscoverRoute
   '/library': typeof AppLibraryRoute
   '/profile': typeof AppProfileRoute
-  '/api/debug-catalog': typeof ApiDebugCatalogRoute
   '/songs/$id': typeof AppSongsIdRoute
   '/u/$username': typeof AppUUsernameRoute
 }
@@ -128,7 +120,6 @@ export interface FileRoutesById {
   '/_app/discover': typeof AppDiscoverRoute
   '/_app/library': typeof AppLibraryRoute
   '/_app/profile': typeof AppProfileRoute
-  '/api/debug-catalog': typeof ApiDebugCatalogRoute
   '/_app/songs/$id': typeof AppSongsIdRoute
   '/_app/u/$username': typeof AppUUsernameRoute
 }
@@ -144,7 +135,6 @@ export interface FileRouteTypes {
     | '/discover'
     | '/library'
     | '/profile'
-    | '/api/debug-catalog'
     | '/songs/$id'
     | '/u/$username'
   fileRoutesByTo: FileRoutesByTo
@@ -158,7 +148,6 @@ export interface FileRouteTypes {
     | '/discover'
     | '/library'
     | '/profile'
-    | '/api/debug-catalog'
     | '/songs/$id'
     | '/u/$username'
   id:
@@ -173,7 +162,6 @@ export interface FileRouteTypes {
     | '/_app/discover'
     | '/_app/library'
     | '/_app/profile'
-    | '/api/debug-catalog'
     | '/_app/songs/$id'
     | '/_app/u/$username'
   fileRoutesById: FileRoutesById
@@ -186,7 +174,6 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  ApiDebugCatalogRoute: typeof ApiDebugCatalogRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -238,13 +225,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/debug-catalog': {
-      id: '/api/debug-catalog'
-      path: '/api/debug-catalog'
-      fullPath: '/api/debug-catalog'
-      preLoaderRoute: typeof ApiDebugCatalogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/profile': {
@@ -311,7 +291,6 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  ApiDebugCatalogRoute: ApiDebugCatalogRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

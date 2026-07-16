@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import type { CatalogTrack } from "../types";
+import { catalogKey } from "../itunes";
 import { db } from "../db.server";
 import { getSessionUser, requireUser } from "../session.server";
 
@@ -11,78 +11,34 @@ function hueFromText(text: string): number {
   return h;
 }
 
-function key(title: string, artist: string): string {
-  return `${title.toLowerCase().trim()}${artist.toLowerCase().trim()}`;
-}
-
-interface ItunesResult {
-  trackId?: number;
-  trackName?: string;
-  artistName?: string;
-  collectionName?: string;
-  primaryGenreName?: string;
-  releaseDate?: string;
-  artworkUrl100?: string;
-  previewUrl?: string;
+export interface TrackAnnotation {
+  songId: number | null;
+  players: number;
+  avgDifficulty: number | null;
+  inLibrary: boolean;
 }
 
 /**
- * Live search against Apple's open music catalog (no key, no auth), annotated
- * with our own community data (player count, difficulty, whether it's already
- * in your library) whenever a hit already exists in our DB.
+ * Annotate catalog search hits (matched by title+artist) with our own community
+ * data — player count, difficulty, and whether it's already in your library.
+ * D1-only: the actual catalog search runs client-side (see src/lib/itunes.ts),
+ * because Apple rate-limits the shared Worker egress IP.
  */
-export const searchCatalog = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ q: z.string().trim().max(120).default("") }))
-  .handler(async ({ data }): Promise<CatalogTrack[]> => {
-    if (data.q.length < 2) return [];
+export const annotateCatalog = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      tracks: z
+        .array(z.object({ title: z.string().max(200), artist: z.string().max(200) }))
+        .max(30),
+    }),
+  )
+  .handler(async ({ data }): Promise<Record<string, TrackAnnotation>> => {
+    const out: Record<string, TrackAnnotation> = {};
+    if (data.tracks.length === 0) return out;
     const viewer = await getSessionUser();
-
-    const url =
-      "https://itunes.apple.com/search?media=music&entity=song&country=US&limit=25&term=" +
-      encodeURIComponent(data.q);
-    let results: ItunesResult[] = [];
-    try {
-      const res = await fetch(url, { headers: { "User-Agent": "SoundProfile/1.0" } });
-      if (res.ok) {
-        const json = (await res.json()) as { results?: ItunesResult[] };
-        results = json.results ?? [];
-      }
-    } catch {
-      results = [];
-    }
-
-    // Normalise + de-dupe by title+artist.
-    const seen = new Set<string>();
-    const tracks = results
-      .filter((r) => r.trackName && r.artistName)
-      .map((r) => {
-        const title = r.trackName!.trim();
-        const artist = r.artistName!.trim();
-        const artwork = (r.artworkUrl100 ?? "").replace(/\/\d+x\d+bb\./, "/600x600bb.");
-        const year = r.releaseDate ? Number(r.releaseDate.slice(0, 4)) || null : null;
-        return {
-          externalId: r.trackId ? String(r.trackId) : "",
-          title,
-          artist,
-          genre: r.primaryGenreName ?? "",
-          year,
-          artworkUrl: artwork,
-          previewUrl: r.previewUrl ?? "",
-          hue: hueFromText(`${title} ${artist}`),
-        };
-      })
-      .filter((t) => {
-        const k = key(t.title, t.artist);
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
-
-    if (tracks.length === 0) return [];
-
-    // Annotate with our DB (existing song id, players, difficulty, in-library).
     const database = db();
-    const titles = [...new Set(tracks.map((t) => t.title.toLowerCase()))];
+
+    const titles = [...new Set(data.tracks.map((t) => t.title.toLowerCase()))];
     const placeholders = titles.map(() => "?").join(",");
     const dbRows = await database
       .prepare(
@@ -96,7 +52,7 @@ export const searchCatalog = createServerFn({ method: "GET" })
 
     const dbByKey = new Map<string, { id: number; players: number; avgDiff: number | null }>();
     for (const r of dbRows.results ?? []) {
-      dbByKey.set(key(r.title, r.artist), { id: r.id, players: r.players, avgDiff: r.avg_diff });
+      dbByKey.set(catalogKey(r.title, r.artist), { id: r.id, players: r.players, avgDiff: r.avg_diff });
     }
 
     let librarySet = new Set<number>();
@@ -108,16 +64,16 @@ export const searchCatalog = createServerFn({ method: "GET" })
       librarySet = new Set((lib.results ?? []).map((r) => r.song_id));
     }
 
-    return tracks.map((t): CatalogTrack => {
-      const match = dbByKey.get(key(t.title, t.artist));
-      return {
-        ...t,
+    for (const t of data.tracks) {
+      const match = dbByKey.get(catalogKey(t.title, t.artist));
+      out[catalogKey(t.title, t.artist)] = {
         songId: match?.id ?? null,
         players: match?.players ?? 0,
         avgDifficulty: match?.avgDiff ?? null,
         inLibrary: match ? librarySet.has(match.id) : false,
       };
-    });
+    }
+    return out;
   });
 
 // Add a catalog track to the current user's library (creates/enriches the song

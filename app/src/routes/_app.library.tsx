@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
-import type { CatalogTrack, Instrument, SearchSong } from "../lib/types";
-import { searchCatalog } from "../lib/api/catalog.functions";
+import type { Instrument, SearchSong } from "../lib/types";
+import { annotateCatalog, type TrackAnnotation } from "../lib/api/catalog.functions";
+import { catalogKey, searchItunes, type ItunesTrack } from "../lib/itunes";
 import { getInstruments, getMyProfile } from "../lib/api/profile.functions";
 import { addCustomSong, searchSongs } from "../lib/api/songs.functions";
 import { AddSongDialog, type AddTarget } from "../components/sp/AddSongDialog";
@@ -64,10 +65,10 @@ function fromCommunity(s: SearchSong): Row {
   };
 }
 
-function fromCatalog(t: CatalogTrack): Row {
+function itunesToRow(t: ItunesTrack, ann: TrackAnnotation | undefined): Row {
   return {
     key: t.externalId || `${t.title}-${t.artist}`,
-    songId: t.songId,
+    songId: ann?.songId ?? null,
     title: t.title,
     artist: t.artist,
     genre: t.genre,
@@ -75,9 +76,9 @@ function fromCatalog(t: CatalogTrack): Row {
     hue: t.hue,
     artworkUrl: t.artworkUrl,
     previewUrl: t.previewUrl,
-    players: t.players,
-    avgDifficulty: t.avgDifficulty,
-    inLibrary: t.inLibrary,
+    players: ann?.players ?? 0,
+    avgDifficulty: ann?.avgDifficulty ?? null,
+    inLibrary: ann?.inLibrary ?? false,
     externalId: t.externalId,
   };
 }
@@ -106,8 +107,16 @@ function Library() {
     setLoading(true);
     debounce.current = setTimeout(async () => {
       try {
-        const res = await searchCatalog({ data: { q } });
-        setRows(res.map(fromCatalog));
+        const raw = await searchItunes(q);
+        if (raw.length === 0) {
+          setRows([]);
+          setSearched(true);
+          return;
+        }
+        const ann = await annotateCatalog({
+          data: { tracks: raw.map((t) => ({ title: t.title, artist: t.artist })) },
+        });
+        setRows(raw.map((t) => itunesToRow(t, ann[catalogKey(t.title, t.artist)])));
         setSearched(true);
       } finally {
         setLoading(false);
