@@ -1,11 +1,13 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { difficultyLabel, skillLabel } from "../lib/catalog";
+import { fileToAvatarDataUrl } from "../lib/image";
 import type { Instrument, MySong, ProfilePublic } from "../lib/types";
 import {
   getInstruments,
   getMyProfile,
+  setAvatarPhoto,
   setMyInstruments,
   updateProfile,
 } from "../lib/api/profile.functions";
@@ -63,7 +65,12 @@ function ProfilePage() {
       {/* Header */}
       <div className="sp-card p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <Avatar name={profile.user.displayName} hue={profile.user.avatarHue} size={84} ring />
+          <AvatarEditor
+            name={profile.user.displayName}
+            hue={profile.user.avatarHue}
+            src={profile.user.avatarUrl}
+            onChanged={() => router.invalidate()}
+          />
           <div className="min-w-0 flex-1">
             {editing ? (
               <EditProfileForm
@@ -92,13 +99,16 @@ function ProfilePage() {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Songs" value={profile.stats.songCount} />
           <Stat label="Instruments" value={profile.stats.instrumentCount} />
           <Stat
             label="Avg difficulty"
             value={profile.stats.avgDifficulty ? difficultyLabel(profile.stats.avgDifficulty) : "—"}
           />
+          <Link to="/friends" className="block">
+            <Stat label="Friends" value={profile.stats.friendCount} interactive />
+          </Link>
         </div>
       </div>
 
@@ -138,7 +148,10 @@ function ProfilePage() {
       <div className="mt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold">My songs</h2>
-          <Link to="/library" className="text-sm font-semibold text-[var(--sp-aqua)] hover:underline">
+          <Link
+            to="/library"
+            className="text-sm font-semibold text-[var(--sp-aqua)] hover:underline"
+          >
             + Add songs
           </Link>
         </div>
@@ -211,11 +224,128 @@ function ProfilePage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({
+  label,
+  value,
+  interactive = false,
+}: {
+  label: string;
+  value: string | number;
+  interactive?: boolean;
+}) {
   return (
-    <div className="rounded-2xl border border-[var(--sp-line)] bg-white/[0.02] px-4 py-3 text-center">
+    <div
+      className={cx(
+        "rounded-2xl border border-[var(--sp-line)] bg-white/[0.02] px-4 py-3 text-center transition",
+        interactive && "hover:border-[var(--sp-line-strong)] hover:bg-white/[0.05]",
+      )}
+    >
       <div className="font-display text-xl font-bold">{value}</div>
       <div className="mt-0.5 text-xs text-[var(--sp-faint)]">{label}</div>
+    </div>
+  );
+}
+
+function AvatarEditor({
+  name,
+  hue,
+  src,
+  onChanged,
+}: {
+  name: string;
+  hue: number;
+  src: string;
+  onChanged: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file");
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      const dataUrl = await fileToAvatarDataUrl(file);
+      await setAvatarPhoto({ data: { dataUrl } });
+      onChanged();
+    } catch {
+      setError("Couldn't update your photo. Try a different image.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    setError(null);
+    setBusy(true);
+    try {
+      await setAvatarPhoto({ data: { dataUrl: "" } });
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        aria-label="Change profile photo"
+        className="group relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--sp-coral)]"
+      >
+        <Avatar name={name} hue={hue} src={src} size={84} ring />
+        <span className="absolute inset-0 grid place-items-center rounded-full bg-black/45 opacity-0 transition group-hover:opacity-100">
+          {busy ? (
+            <Spinner />
+          ) : (
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="1.8"
+            >
+              <path d="M4 8h3l1.5-2h7L18 8h2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
+              <circle cx="12" cy="13" r="3.2" />
+            </svg>
+          )}
+        </span>
+        <span className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full bg-[var(--sp-coral)] text-white ring-2 ring-[var(--sp-bg)]">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </span>
+      </button>
+      <input ref={inputRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
+      {src && !busy && (
+        <button
+          type="button"
+          onClick={remove}
+          className="text-[11px] font-medium text-[var(--sp-faint)] transition hover:text-[var(--sp-coral)]"
+        >
+          Remove photo
+        </button>
+      )}
+      {error && (
+        <p className="max-w-[10rem] text-center text-[11px] text-[var(--sp-coral)]">{error}</p>
+      )}
     </div>
   );
 }
@@ -310,7 +440,9 @@ function InstrumentEditor({
               key={inst.id}
               className={cx(
                 "rounded-xl border p-3 transition",
-                active ? "border-[var(--sp-coral)] bg-[var(--sp-coral)]/10" : "border-[var(--sp-line)]",
+                active
+                  ? "border-[var(--sp-coral)] bg-[var(--sp-coral)]/10"
+                  : "border-[var(--sp-line)]",
               )}
             >
               <button
@@ -332,7 +464,9 @@ function InstrumentEditor({
                 <span
                   className={cx(
                     "grid h-5 w-5 place-items-center rounded-full text-[11px]",
-                    active ? "bg-[var(--sp-coral)] text-white" : "border border-[var(--sp-line-strong)] text-transparent",
+                    active
+                      ? "bg-[var(--sp-coral)] text-white"
+                      : "border border-[var(--sp-line-strong)] text-transparent",
                   )}
                 >
                   ✓
@@ -362,7 +496,11 @@ function InstrumentEditor({
         })}
       </div>
       <div className="mt-4 flex gap-2">
-        <PrimaryCTA onClick={save} disabled={saving || ids.length === 0} className="px-5 py-2 text-[13px]">
+        <PrimaryCTA
+          onClick={save}
+          disabled={saving || ids.length === 0}
+          className="px-5 py-2 text-[13px]"
+        >
           {saving ? <Spinner /> : "Save instruments"}
         </PrimaryCTA>
         <button onClick={onCancel} className="px-4 text-sm font-semibold text-[var(--sp-muted)]">

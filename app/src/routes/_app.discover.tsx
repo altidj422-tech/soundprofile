@@ -141,14 +141,15 @@ function FeedCard({
       {song.artworkUrl && <div className="absolute inset-0 bg-black/30" />}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,14,26,0.55)_0%,rgba(11,14,26,0.1)_28%,rgba(11,14,26,0.25)_55%,rgba(11,14,26,0.92)_100%)]" />
 
-      <div className="relative mx-auto flex h-full max-w-xl flex-col justify-end px-6 pb-8 pt-20">
+      <div className="relative mx-auto flex h-full max-w-xl flex-col justify-end px-4 pb-8 pt-20 sm:px-6">
+        <div className="rounded-[26px] border border-white/12 bg-black/40 p-5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:p-6">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--sp-coral)]/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg">
             <span aria-hidden>✦</span>
             {reason}
           </span>
           {song.genre && (
-            <span className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-white/80 backdrop-blur">
+            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-white/80">
               {song.genre}
             </span>
           )}
@@ -163,7 +164,7 @@ function FeedCard({
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <div className="flex items-center gap-2.5 rounded-2xl bg-black/35 px-3.5 py-2.5 backdrop-blur">
+          <div className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.07] px-3.5 py-2.5">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-white/60">
                 Community difficulty
@@ -173,7 +174,7 @@ function FeedCard({
               </div>
             </div>
           </div>
-          <div className="rounded-2xl bg-black/35 px-3.5 py-2.5 backdrop-blur">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.07] px-3.5 py-2.5">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-white/60">
               Players
             </div>
@@ -220,8 +221,9 @@ function FeedCard({
             Details
           </Link>
         </div>
+        </div>
 
-        <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-white/40">
+        <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-white/40">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M6 13l6 6 6-6" />
           </svg>

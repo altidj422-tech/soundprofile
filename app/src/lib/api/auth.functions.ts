@@ -22,6 +22,7 @@ interface UserRow {
   display_name: string;
   email: string | null;
   avatar_hue: number;
+  avatar_url: string;
   password_hash: string;
   password_salt: string;
   is_seed: number;
@@ -34,6 +35,7 @@ function toSessionUser(row: UserRow): SessionUser {
     displayName: row.display_name,
     email: row.email,
     avatarHue: row.avatar_hue,
+    avatarUrl: row.avatar_url ?? "",
   };
 }
 
@@ -53,7 +55,8 @@ export const signup = createServerFn({ method: "POST" })
       .bind(data.email, data.username)
       .first<{ id: number; email: string | null; username: string }>();
     if (existing) {
-      if (existing.email === data.email) return { ok: false, error: "That email is already registered" };
+      if (existing.email === data.email)
+        return { ok: false, error: "That email is already registered" };
       return { ok: false, error: "That username is taken" };
     }
 
@@ -62,7 +65,7 @@ export const signup = createServerFn({ method: "POST" })
     const inserted = await database
       .prepare(
         `INSERT INTO users (email, username, display_name, avatar_hue, password_hash, password_salt, is_seed)
-         VALUES (?, ?, ?, ?, ?, ?, 0) RETURNING id, username, display_name, email, avatar_hue`,
+         VALUES (?, ?, ?, ?, ?, ?, 0) RETURNING id, username, display_name, email, avatar_hue, avatar_url`,
       )
       .bind(data.email, data.username, data.displayName, hue, hash, salt)
       .first<UserRow>();
@@ -83,7 +86,7 @@ export const login = createServerFn({ method: "POST" })
     const id = data.identifier.toLowerCase();
     const row = await db()
       .prepare(
-        `SELECT id, username, display_name, email, avatar_hue, password_hash, password_salt, is_seed
+        `SELECT id, username, display_name, email, avatar_hue, avatar_url, password_hash, password_salt, is_seed
          FROM users WHERE (email = ? OR username = ?) AND is_seed = 0`,
       )
       .bind(id, id)

@@ -40,18 +40,20 @@ export function Logo({ size = 28, withText = true }: { size?: number; withText?:
 export function Avatar({
   name,
   hue,
+  src,
   size = 40,
   ring = false,
 }: {
   name: string;
   hue: number;
+  src?: string; // profile photo; falls back to the gradient + initials
   size?: number;
   ring?: boolean;
 }) {
   return (
     <span
       className={cx(
-        "inline-grid shrink-0 place-items-center rounded-full font-display font-semibold text-[#0b0e1a]",
+        "relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full font-display font-semibold text-[#0b0e1a]",
         ring && "ring-2 ring-white/20",
       )}
       style={{
@@ -62,6 +64,18 @@ export function Avatar({
       }}
     >
       {initials(name)}
+      {src ? (
+        // Photo layered over the gradient; if it fails to load, the gradient shows.
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      ) : null}
     </span>
   );
 }
@@ -72,7 +86,7 @@ function waveBars(seed: number, count = 22): number[] {
   let s = seed || 1;
   for (let i = 0; i < count; i++) {
     s = (s * 1103515245 + 12345) & 0x7fffffff;
-    out.push(0.28 + (s % 1000) / 1000 * 0.72);
+    out.push(0.28 + ((s % 1000) / 1000) * 0.72);
   }
   return out;
 }
@@ -173,7 +187,10 @@ export function PreviewButton({
       audio.pause();
       setPlaying(false);
     } else {
-      void audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      void audio
+        .play()
+        .then(() => setPlaying(true))
+        .catch(() => setPlaying(false));
     }
   }
 

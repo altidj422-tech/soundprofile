@@ -19,6 +19,7 @@ interface UserRow {
   display_name: string;
   email: string | null;
   avatar_hue: number;
+  avatar_url: string;
 }
 
 function toSessionUser(row: UserRow): SessionUser {
@@ -28,6 +29,7 @@ function toSessionUser(row: UserRow): SessionUser {
     displayName: row.display_name,
     email: row.email,
     avatarHue: row.avatar_hue,
+    avatarUrl: row.avatar_url ?? "",
   };
 }
 
@@ -52,7 +54,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!token) return null;
   const row = await db()
     .prepare(
-      `SELECT u.id, u.username, u.display_name, u.email, u.avatar_hue
+      `SELECT u.id, u.username, u.display_name, u.email, u.avatar_hue, u.avatar_url
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token = ? AND s.expires_at > datetime('now')`,
     )

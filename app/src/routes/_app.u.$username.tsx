@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 
 import { difficultyLabel } from "../lib/catalog";
 import { getUserProfile } from "../lib/api/profile.functions";
+import { FriendButton } from "../components/sp/FriendButton";
 import {
   Avatar,
   DifficultyMeter,
@@ -21,28 +22,41 @@ export const Route = createFileRoute("/_app/u/$username")({
 
 function PublicProfile() {
   const { profile } = Route.useLoaderData();
+  const router = useRouter();
 
   if (!profile) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-16">
         <EmptyState title="Musician not found" icon="🔍">
-          No one goes by that name here. <Link to="/discover" className="text-[var(--sp-aqua)]">Back to feed</Link>
+          No one goes by that name here.{" "}
+          <Link to="/discover" className="text-[var(--sp-aqua)]">
+            Back to feed
+          </Link>
         </EmptyState>
       </div>
     );
   }
 
-  const { user, instruments, songs, stats, isMe } = profile;
+  const { user, instruments, songs, stats, isMe, friendStatus } = profile;
 
   return (
     <div className="mx-auto max-w-3xl px-5 pb-28 pt-8 lg:pb-12 lg:pt-10">
-      <Link to="/discover" className="text-sm font-medium text-[var(--sp-faint)] hover:text-[var(--sp-muted)]">
+      <Link
+        to="/discover"
+        className="text-sm font-medium text-[var(--sp-faint)] hover:text-[var(--sp-muted)]"
+      >
         ← Back to feed
       </Link>
 
       <div className="sp-card mt-4 p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <Avatar name={user.displayName} hue={user.avatarHue} size={84} ring />
+          <Avatar
+            name={user.displayName}
+            hue={user.avatarHue}
+            src={user.avatarUrl}
+            size={84}
+            ring
+          />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl font-bold">{user.displayName}</h1>
@@ -54,23 +68,30 @@ function PublicProfile() {
             </div>
             <p className="text-sm text-[var(--sp-muted)]">@{user.username}</p>
             {user.bio && <p className="mt-2 text-[15px] text-[var(--sp-ink)]/90">{user.bio}</p>}
-            {isMe && (
-              <div className="mt-3">
+            <div className="mt-3">
+              {isMe ? (
                 <Link to="/profile">
                   <QuietGlass>Edit your profile</QuietGlass>
                 </Link>
-              </div>
-            )}
+              ) : (
+                <FriendButton
+                  userId={user.id}
+                  status={friendStatus}
+                  onChanged={() => router.invalidate()}
+                />
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Songs" value={stats.songCount} />
           <Stat label="Instruments" value={stats.instrumentCount} />
           <Stat
             label="Avg difficulty"
             value={stats.avgDifficulty ? difficultyLabel(stats.avgDifficulty) : "—"}
           />
+          <Stat label="Friends" value={stats.friendCount} />
         </div>
       </div>
 

@@ -18,6 +18,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppLibraryRouteImport } from './routes/_app.library'
+import { Route as AppFriendsRouteImport } from './routes/_app.friends'
 import { Route as AppDiscoverRouteImport } from './routes/_app.discover'
 import { Route as AppUUsernameRouteImport } from './routes/_app.u.$username'
 import { Route as AppSongsIdRouteImport } from './routes/_app.songs.$id'
@@ -66,6 +67,11 @@ const AppLibraryRoute = AppLibraryRouteImport.update({
   path: '/library',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFriendsRoute = AppFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDiscoverRoute = AppDiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/discover': typeof AppDiscoverRoute
+  '/friends': typeof AppFriendsRoute
   '/library': typeof AppLibraryRoute
   '/profile': typeof AppProfileRoute
   '/songs/$id': typeof AppSongsIdRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/discover': typeof AppDiscoverRoute
+  '/friends': typeof AppFriendsRoute
   '/library': typeof AppLibraryRoute
   '/profile': typeof AppProfileRoute
   '/songs/$id': typeof AppSongsIdRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_app/discover': typeof AppDiscoverRoute
+  '/_app/friends': typeof AppFriendsRoute
   '/_app/library': typeof AppLibraryRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/songs/$id': typeof AppSongsIdRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/discover'
+    | '/friends'
     | '/library'
     | '/profile'
     | '/songs/$id'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/discover'
+    | '/friends'
     | '/library'
     | '/profile'
     | '/songs/$id'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/_app/discover'
+    | '/_app/friends'
     | '/_app/library'
     | '/_app/profile'
     | '/_app/songs/$id'
@@ -241,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLibraryRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/friends': {
+      id: '/_app/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof AppFriendsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/discover': {
       id: '/_app/discover'
       path: '/discover'
@@ -267,6 +286,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppDiscoverRoute: typeof AppDiscoverRoute
+  AppFriendsRoute: typeof AppFriendsRoute
   AppLibraryRoute: typeof AppLibraryRoute
   AppProfileRoute: typeof AppProfileRoute
   AppSongsIdRoute: typeof AppSongsIdRoute
@@ -275,6 +295,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppDiscoverRoute: AppDiscoverRoute,
+  AppFriendsRoute: AppFriendsRoute,
   AppLibraryRoute: AppLibraryRoute,
   AppProfileRoute: AppProfileRoute,
   AppSongsIdRoute: AppSongsIdRoute,

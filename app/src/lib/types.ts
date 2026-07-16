@@ -14,6 +14,7 @@ export interface SessionUser {
   displayName: string;
   email: string | null;
   avatarHue: number;
+  avatarUrl: string; // profile photo ("" → fall back to the gradient avatar)
 }
 
 export interface UserInstrument extends Instrument {
@@ -58,6 +59,11 @@ export interface MySong {
   note: string;
 }
 
+// Friendship of the viewer relative to another user.
+// 'me' — it's you · 'none' — no relation · 'outgoing' — you sent a request ·
+// 'incoming' — they sent you a request · 'friends' — connected.
+export type FriendStatus = "me" | "none" | "outgoing" | "incoming" | "friends";
+
 export interface ProfilePublic {
   user: {
     id: number;
@@ -65,12 +71,33 @@ export interface ProfilePublic {
     displayName: string;
     bio: string;
     avatarHue: number;
+    avatarUrl: string;
     isSeed: boolean;
   };
   instruments: UserInstrument[];
   songs: MySong[];
-  stats: { songCount: number; instrumentCount: number; avgDifficulty: number | null };
+  stats: {
+    songCount: number;
+    instrumentCount: number;
+    avgDifficulty: number | null;
+    friendCount: number;
+  };
   isMe: boolean;
+  friendStatus: FriendStatus; // the viewer's relationship to this profile
+}
+
+// A compact musician card used in search results and friend lists.
+export interface ProfileSummary {
+  id: number;
+  username: string;
+  displayName: string;
+  bio: string;
+  avatarHue: number;
+  avatarUrl: string;
+  isSeed: boolean;
+  songCount: number;
+  instrumentCount: number;
+  friendStatus: FriendStatus;
 }
 
 export interface Recommendation {

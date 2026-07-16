@@ -29,7 +29,9 @@ echo "→ Building the app…"
 bun run build
 
 echo "→ Setting up the local database (schema + demo community)…"
-for f in migrations/0001_init.sql migrations/0002_soundprofile.sql migrations/0003_seed.sql; do
+# Apply every migration in order. Re-runs are tolerated (|| true): additive
+# ALTER/CREATE statements simply error out harmlessly the second time.
+for f in migrations/[0-9]*.sql; do
   bunx wrangler d1 execute soundprofile-local --local --config wrangler.jsonc --file="$f" >/dev/null 2>&1 || true
 done
 

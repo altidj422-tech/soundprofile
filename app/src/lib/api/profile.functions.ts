@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { Instrument, ProfilePublic } from "../types";
 import { db } from "../db.server";
+import { friendCountOf, loadViewerRelations } from "../friends.server";
 import { loadUserInstruments, loadUserSongs } from "../queries.server";
 import { getSessionUser, requireUser } from "../session.server";
 
@@ -21,17 +22,21 @@ interface ProfileUserRow {
   display_name: string;
   bio: string;
   avatar_hue: number;
+  avatar_url: string;
   is_seed: number;
 }
 
+const PROFILE_COLUMNS = "id, username, display_name, bio, avatar_hue, avatar_url, is_seed";
+
 async function buildProfile(row: ProfileUserRow, viewerId: number | null): Promise<ProfilePublic> {
-  const [songs, instruments] = await Promise.all([
+  const [songs, instruments, friendCount, relations] = await Promise.all([
     loadUserSongs(row.id),
     loadUserInstruments(row.id),
+    friendCountOf(row.id),
+    viewerId != null ? loadViewerRelations(viewerId) : Promise.resolve(null),
   ]);
   const distinctSongs = new Set(songs.map((s) => s.song.id));
-  const avg =
-    songs.length > 0 ? songs.reduce((a, s) => a + s.difficulty, 0) / songs.length : null;
+  const avg = songs.length > 0 ? songs.reduce((a, s) => a + s.difficulty, 0) / songs.length : null;
   return {
     user: {
       id: row.id,
@@ -39,6 +44,7 @@ async function buildProfile(row: ProfileUserRow, viewerId: number | null): Promi
       displayName: row.display_name,
       bio: row.bio,
       avatarHue: row.avatar_hue,
+      avatarUrl: row.avatar_url ?? "",
       isSeed: row.is_seed === 1,
     },
     instruments,
@@ -47,8 +53,10 @@ async function buildProfile(row: ProfileUserRow, viewerId: number | null): Promi
       songCount: distinctSongs.size,
       instrumentCount: instruments.length,
       avgDifficulty: avg,
+      friendCount,
     },
     isMe: viewerId === row.id,
+    friendStatus: relations ? relations.statusFor(row.id) : "none",
   };
 }
 
@@ -56,7 +64,7 @@ export const getMyProfile = createServerFn({ method: "GET" }).handler(
   async (): Promise<ProfilePublic> => {
     const user = await requireUser();
     const row = await db()
-      .prepare("SELECT id, username, display_name, bio, avatar_hue, is_seed FROM users WHERE id = ?")
+      .prepare(`SELECT ${PROFILE_COLUMNS} FROM users WHERE id = ?`)
       .bind(user.id)
       .first<ProfileUserRow>();
     if (!row) throw new Error("NOT_FOUND");
@@ -69,7 +77,7 @@ export const getUserProfile = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<ProfilePublic | null> => {
     const viewer = await getSessionUser();
     const row = await db()
-      .prepare("SELECT id, username, display_name, bio, avatar_hue, is_seed FROM users WHERE username = ?")
+      .prepare(`SELECT ${PROFILE_COLUMNS} FROM users WHERE username = ?`)
       .bind(data.username)
       .first<ProfileUserRow>();
     if (!row) return null;
@@ -92,11 +100,41 @@ export const updateProfile = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+// Max stored photo payload. The client resizes to a small square before upload,
+// so a real photo lands well under this; the cap guards the D1 row either way.
+const MAX_AVATAR_CHARS = 700_000; // ~500 KB of base64
+
+const avatarSchema = z
+  .string()
+  .max(MAX_AVATAR_CHARS, "That image is too large — pick a smaller one")
+  .refine(
+    (v) => v === "" || /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/.test(v),
+    "Unsupported image format",
+  );
+
+// Set (or clear, with "") the signed-in user's profile photo. Stored as a small
+// client-resized data URL — no object storage needed.
+export const setAvatarPhoto = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ dataUrl: avatarSchema }))
+  .handler(async ({ data }) => {
+    const user = await requireUser();
+    await db()
+      .prepare("UPDATE users SET avatar_url = ? WHERE id = ?")
+      .bind(data.dataUrl, user.id)
+      .run();
+    return { ok: true as const };
+  });
+
 export const setMyInstruments = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       items: z
-        .array(z.object({ instrumentId: z.number().int().positive(), skill: z.number().int().min(1).max(4) }))
+        .array(
+          z.object({
+            instrumentId: z.number().int().positive(),
+            skill: z.number().int().min(1).max(4),
+          }),
+        )
         .max(13),
     }),
   )
