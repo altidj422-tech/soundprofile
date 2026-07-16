@@ -1,5 +1,5 @@
 {
-  "db": false,
+  "db": true,
   "r2": false,
   "kv": false,
   "durableObject": null

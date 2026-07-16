@@ -93,21 +93,105 @@
   --radius: 0.625rem;
 }
 
+/* ────────────────────────────────────────────────────────────────────────
+ * SoundProfile brand layer (independent brand — this is a type:"website" build).
+ * Stage-lighting palette: warm coral key light + cool aqua rim over indigo night.
+ * ──────────────────────────────────────────────────────────────────────── */
+:root {
+  --sp-bg: #0b0e1a;
+  --sp-bg-2: #111535;
+  --sp-surface: #171c42;
+  --sp-surface-2: #202759;
+  --sp-ink: #f5f6ff;
+  --sp-muted: #a7adda;
+  --sp-faint: #6e76a8;
+  --sp-line: rgba(255, 255, 255, 0.09);
+  --sp-line-strong: rgba(255, 255, 255, 0.16);
+  --sp-coral: #ff5d73;
+  --sp-coral-2: #ff9c5b;
+  --sp-aqua: #33e6c4;
+  --sp-gold: #ffc24b;
+  --sp-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --sp-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
 @layer base {
   html {
-    background-color: var(--hf-color-background-primary);
-    color: var(--hf-color-text-primary);
+    background-color: var(--sp-bg);
+    color: var(--sp-ink);
     color-scheme: dark;
   }
 
   body {
     min-height: 100vh;
-    background-color: var(--hf-color-background-primary);
-    color: var(--hf-color-text-primary);
-    font-family: var(--hf-type-family-secondary);
+    background:
+      radial-gradient(1200px 620px at 82% -8%, rgba(255, 93, 115, 0.16), transparent 60%),
+      radial-gradient(1000px 560px at 6% 4%, rgba(51, 230, 196, 0.12), transparent 58%),
+      var(--sp-bg);
+    background-attachment: fixed;
+    color: var(--sp-ink);
+    font-family: var(--sp-body);
+    -webkit-font-smoothing: antialiased;
   }
 
   * {
-    border-color: var(--hf-color-border-default);
+    border-color: var(--sp-line);
+  }
+
+  ::selection {
+    background: rgba(255, 93, 115, 0.32);
+    color: #fff;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: var(--sp-display);
+    letter-spacing: -0.01em;
+  }
+  .sp-gradient-text {
+    background: linear-gradient(100deg, var(--sp-coral), var(--sp-coral-2) 60%, var(--sp-gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sp-card {
+    background: linear-gradient(180deg, var(--sp-surface), var(--sp-bg-2));
+    border: 1px solid var(--sp-line);
+    border-radius: 1rem;
+  }
+  /* thin scrollbars inside app panels */
+  .sp-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sp-line-strong) transparent;
+  }
+  .sp-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .sp-scroll::-webkit-scrollbar-thumb {
+    background: var(--sp-line-strong);
+    border-radius: 999px;
+  }
+  /* vertical scroll-snap feed */
+  .sp-feed {
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+  }
+  .sp-feed::-webkit-scrollbar {
+    display: none;
+  }
+  .sp-snap {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -8,8 +8,6 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { button } from "@higgsfield/quanta/button";
-import { NotFound } from "@higgsfield/quanta/not-found";
 
 import appCss from "../styles.css?url";
 import { reportHiggsfieldError } from "../lib/higgsfield-error-reporting";
@@ -94,6 +92,12 @@ function buildHead(meta: AppMeta) {
       ...(ogVideo ? [{ property: "og:video", content: ogVideo }] : []),
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" as const },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap",
+      },
       { rel: "stylesheet", href: appCss },
       ...(favicon ? [{ rel: "icon", href: favicon }] : []),
     ],
@@ -102,17 +106,20 @@ function buildHead(meta: AppMeta) {
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-q-background-primary px-4">
-      <NotFound
-        className="mx-auto max-w-md"
-        icon={<span className="text-q-title-md-semi-bold text-q-text-primary">404</span>}
-        title="Page not found"
-        subtitle="The page you're looking for doesn't exist or has been moved."
-      >
-        <Link to="/" className={button({ variant: "primary", size: "md" }, "mt-3")}>
-          Go home
+    <div className="flex min-h-dvh items-center justify-center px-4">
+      <div className="mx-auto max-w-md text-center">
+        <div className="font-display sp-gradient-text text-6xl font-bold">404</div>
+        <h1 className="font-display mt-3 text-2xl font-semibold">Off the setlist</h1>
+        <p className="mt-2 text-[15px] text-[var(--sp-muted)]">
+          That page doesn&apos;t exist or has moved. Let&apos;s get you back to the music.
+        </p>
+        <Link
+          to="/"
+          className="mt-6 inline-flex items-center justify-center rounded-full bg-[var(--sp-coral)] px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+        >
+          Back home
         </Link>
-      </NotFound>
+      </div>
     </div>
   );
 }
@@ -125,23 +132,26 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-q-background-primary px-4">
+    <div className="flex min-h-dvh items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-q-title-lg-semi-bold text-q-text-primary">This page didn't load</h1>
-        <p className="mt-2 text-q-body-sm-regular text-q-text-secondary">
-          Something went wrong on our end. You can try refreshing or head back home.
+        <h1 className="font-display text-2xl font-semibold">This page didn&apos;t load</h1>
+        <p className="mt-2 text-[15px] text-[var(--sp-muted)]">
+          Something went wrong on our end. Try refreshing or head back home.
         </p>
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className={button({ variant: "primary", size: "md" })}
+            className="inline-flex items-center justify-center rounded-full bg-[var(--sp-coral)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
           >
             Try again
           </button>
-          <a href="/" className={button({ variant: "outline", size: "md" })}>
+          <a
+            href="/"
+            className="inline-flex items-center justify-center rounded-full border border-[var(--sp-line-strong)] px-5 py-2.5 text-sm font-semibold text-[var(--sp-ink)] transition hover:bg-white/5"
+          >
             Go home
           </a>
         </div>
@@ -168,7 +178,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="bg-q-background-primary text-q-text-primary">
+      <body className="min-h-dvh antialiased">
         {children}
         <Scripts />
       </body>
