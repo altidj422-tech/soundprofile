@@ -20,6 +20,10 @@ export function applySecurityHeaders(response: Response): Response {
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https:; media-src 'self' https:; " +
       "connect-src 'self' https:; " +
+      // Community tutorials are embedded YouTube players (privacy-enhanced
+      // domain). frame-src governs what WE embed — separate from the platform's
+      // injected frame-ancestors (who may embed US), so this is additive.
+      "frame-src https://www.youtube-nocookie.com https://www.youtube.com; " +
       "base-uri 'self'; form-action 'self'",
   );
   headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');

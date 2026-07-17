@@ -7,9 +7,11 @@ import { getComments } from "../lib/api/comments.functions";
 import { addToLearning, getLearningIds, removeFromLearning } from "../lib/api/learning.functions";
 import { getInstruments, getMyProfile } from "../lib/api/profile.functions";
 import { getSongDetail, removeUserSong } from "../lib/api/songs.functions";
+import { getSongTutorial } from "../lib/api/tutorials.functions";
 import { AddSongDialog } from "../components/sp/AddSongDialog";
 import { CommentsPanel } from "../components/sp/CommentsPanel";
 import { TechniquesPanel } from "../components/sp/TechniquesPanel";
+import { TutorialPanel } from "../components/sp/TutorialPanel";
 import {
   Avatar,
   DifficultyMeter,
@@ -32,15 +34,18 @@ export const Route = createFileRoute("/_app/songs/$id")({
         extras: null,
         comments: [],
         isLearning: false,
+        tutorial: null,
       };
-    const [detail, instruments, profile, extras, comments, learningIds] = await Promise.all([
-      getSongDetail({ data: { songId } }),
-      getInstruments(),
-      getMyProfile(),
-      getSongExtras({ data: { songId } }),
-      getComments({ data: { songId } }),
-      getLearningIds(),
-    ]);
+    const [detail, instruments, profile, extras, comments, learningIds, tutorial] =
+      await Promise.all([
+        getSongDetail({ data: { songId } }),
+        getInstruments(),
+        getMyProfile(),
+        getSongExtras({ data: { songId } }),
+        getComments({ data: { songId } }),
+        getLearningIds(),
+        getSongTutorial({ data: { songId } }),
+      ]);
     return {
       detail,
       instruments,
@@ -48,13 +53,14 @@ export const Route = createFileRoute("/_app/songs/$id")({
       extras,
       comments,
       isLearning: learningIds.includes(songId),
+      tutorial,
     };
   },
   component: SongPage,
 });
 
 function SongPage() {
-  const { detail, instruments, myInstrumentIds, extras, comments, isLearning } =
+  const { detail, instruments, myInstrumentIds, extras, comments, isLearning, tutorial } =
     Route.useLoaderData();
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -87,6 +93,14 @@ function SongPage() {
   }
 
   const { song, players, byInstrument, mine } = detail;
+
+  // Instrument to bias the YouTube search toward: the one you play this song on,
+  // else your primary instrument, else nothing.
+  const learnInstrument =
+    mine[0]?.instrument.name ??
+    instruments.find((i) => i.id === myInstrumentIds[0])?.name ??
+    "";
+  const canContribute = !!extras && extras.viewer.userId > 0 && !extras.viewer.banned;
 
   return (
     <div className="mx-auto max-w-3xl px-5 pb-28 pt-8 lg:pb-12 lg:pt-10">
@@ -173,6 +187,16 @@ function SongPage() {
           </div>
         </div>
       </div>
+
+      {/* Tutorial: community-pinned embed + YouTube search */}
+      <TutorialPanel
+        songId={song.id}
+        title={song.title}
+        artist={song.artist}
+        instrument={learnInstrument}
+        tutorial={tutorial}
+        canContribute={canContribute}
+      />
 
       {/* Your entries */}
       {mine.length > 0 && (

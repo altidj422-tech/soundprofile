@@ -199,3 +199,11 @@ export interface Comment {
   createdAt: string;
   canDelete: boolean;
 }
+
+// A community-pinned YouTube tutorial for a song.
+export interface SongTutorial {
+  videoId: string;
+  addedByUsername: string;
+  addedByDisplayName: string;
+  canEdit: boolean; // viewer is the contributor or a trusted moderator
+}
