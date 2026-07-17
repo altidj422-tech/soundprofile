@@ -184,13 +184,6 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
             {item.label}
           </Link>
         ))}
-        <button
-          onClick={handleLogout}
-          className="flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-[var(--sp-faint)]"
-        >
-          <UserIcon />
-          Sign out
-        </button>
       </nav>
     </div>
   );

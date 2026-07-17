@@ -11,6 +11,7 @@ import {
   setMyInstruments,
   updateProfile,
 } from "../lib/api/profile.functions";
+import { logout } from "../lib/api/auth.functions";
 import { removeUserSong } from "../lib/api/songs.functions";
 import { AddSongDialog, type AddTarget } from "../components/sp/AddSongDialog";
 import BorderGlow from "../components/reactbits/BorderGlow";
@@ -33,6 +34,14 @@ export const Route = createFileRoute("/_app/profile")({
   },
   component: ProfilePage,
 });
+
+async function handleLogout() {
+  try {
+    await logout();
+  } finally {
+    if (typeof window !== "undefined") window.location.href = "/";
+  }
+}
 
 function ProfilePage() {
   const { profile, instruments } = Route.useLoaderData();
@@ -220,6 +229,16 @@ function ProfilePage() {
             ))}
           </ul>
         )}
+      </div>
+
+      {/* Sign out — mobile only (desktop has it in the sidebar) */}
+      <div className="mt-10 flex justify-center lg:hidden">
+        <button
+          onClick={handleLogout}
+          className="rounded-full border border-[var(--sp-line-strong)] px-6 py-2.5 text-sm font-semibold text-[var(--sp-muted)] transition hover:border-[var(--sp-coral)]/50 hover:text-[var(--sp-coral)]"
+        >
+          Sign out
+        </button>
       </div>
 
       <AddSongDialog
