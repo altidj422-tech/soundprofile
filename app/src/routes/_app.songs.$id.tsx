@@ -4,6 +4,7 @@ import { useState } from "react";
 import { difficultyLabel } from "../lib/catalog";
 import { getSongExtras } from "../lib/api/annotations.functions";
 import { getComments } from "../lib/api/comments.functions";
+import { addToLearning, getLearningIds, removeFromLearning } from "../lib/api/learning.functions";
 import { getInstruments, getMyProfile } from "../lib/api/profile.functions";
 import { getSongDetail, removeUserSong } from "../lib/api/songs.functions";
 import { AddSongDialog } from "../components/sp/AddSongDialog";
@@ -17,19 +18,28 @@ import {
   PrimaryCTA,
   QuietGlass,
   SongCover,
+  cx,
 } from "../components/sp/ui";
 
 export const Route = createFileRoute("/_app/songs/$id")({
   loader: async ({ params }) => {
     const songId = Number(params.id);
     if (!Number.isFinite(songId))
-      return { detail: null, instruments: [], myInstrumentIds: [], extras: null, comments: [] };
-    const [detail, instruments, profile, extras, comments] = await Promise.all([
+      return {
+        detail: null,
+        instruments: [],
+        myInstrumentIds: [],
+        extras: null,
+        comments: [],
+        isLearning: false,
+      };
+    const [detail, instruments, profile, extras, comments, learningIds] = await Promise.all([
       getSongDetail({ data: { songId } }),
       getInstruments(),
       getMyProfile(),
       getSongExtras({ data: { songId } }),
       getComments({ data: { songId } }),
+      getLearningIds(),
     ]);
     return {
       detail,
@@ -37,15 +47,34 @@ export const Route = createFileRoute("/_app/songs/$id")({
       myInstrumentIds: profile.instruments.map((i) => i.id),
       extras,
       comments,
+      isLearning: learningIds.includes(songId),
     };
   },
   component: SongPage,
 });
 
 function SongPage() {
-  const { detail, instruments, myInstrumentIds, extras, comments } = Route.useLoaderData();
+  const { detail, instruments, myInstrumentIds, extras, comments, isLearning } =
+    Route.useLoaderData();
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [learning, setLearning] = useState(isLearning);
+  const [learningBusy, setLearningBusy] = useState(false);
+
+  async function toggleLearning(songId: number) {
+    if (learningBusy) return;
+    const next = !learning;
+    setLearning(next);
+    setLearningBusy(true);
+    try {
+      if (next) await addToLearning({ data: { songId } });
+      else await removeFromLearning({ data: { songId } });
+    } catch {
+      setLearning(!next);
+    } finally {
+      setLearningBusy(false);
+    }
+  }
 
   if (!detail) {
     return (
@@ -94,15 +123,34 @@ function SongPage() {
                 {song.genre ? <span className="text-[var(--sp-faint)]"> · {song.genre}</span> : null}
               </p>
             </div>
-            {mine.length > 0 ? (
-              <span className="rounded-full border border-[var(--sp-aqua)]/50 px-3 py-2 text-sm font-semibold text-[var(--sp-aqua)]">
-                ✓ In your set
-              </span>
-            ) : (
-              <PrimaryCTA onClick={() => setDialogOpen(true)} className="px-5 py-2.5 text-sm">
-                Add to my songs
-              </PrimaryCTA>
-            )}
+            <div className="flex flex-col items-end gap-2">
+              {mine.length > 0 ? (
+                <span className="rounded-full border border-[var(--sp-aqua)]/50 px-3 py-2 text-sm font-semibold text-[var(--sp-aqua)]">
+                  ✓ In your set
+                </span>
+              ) : (
+                <PrimaryCTA onClick={() => setDialogOpen(true)} className="px-5 py-2.5 text-sm">
+                  Add to my songs
+                </PrimaryCTA>
+              )}
+              <button
+                onClick={() => toggleLearning(song.id)}
+                disabled={learningBusy}
+                aria-label={learning ? "Remove from Learning" : "Add to Learning"}
+                className={cx(
+                  "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-semibold transition active:scale-[0.97] disabled:opacity-60",
+                  learning
+                    ? "border-[var(--sp-aqua)] bg-[var(--sp-aqua)]/12 text-[var(--sp-aqua)]"
+                    : "border-[var(--sp-line-strong)] bg-white/[0.03] text-[var(--sp-muted)] hover:text-[var(--sp-ink)]",
+                )}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 4 2 9l10 5 10-5-10-5Z" />
+                  <path d="M5 11v5c0 1.4 3.1 3 7 3s7-1.6 7-3v-5" />
+                </svg>
+                {learning ? "In Learning" : "Learn this"}
+              </button>
+            </div>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">

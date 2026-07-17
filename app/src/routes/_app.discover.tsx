@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FeedFriend, Recommendation } from "../lib/types";
 import { getInstruments, getMyProfile } from "../lib/api/profile.functions";
 import { dismissSong, getRecommendations } from "../lib/api/recommend.functions";
+import { addToLearning, getLearningIds, removeFromLearning } from "../lib/api/learning.functions";
 import { AddSongDialog, type AddTarget } from "../components/sp/AddSongDialog";
 import {
   AquaGhost,
@@ -18,12 +19,18 @@ import {
 
 export const Route = createFileRoute("/_app/discover")({
   loader: async () => {
-    const [recs, instruments, profile] = await Promise.all([
+    const [recs, instruments, profile, learningIds] = await Promise.all([
       getRecommendations({ data: { limit: 30 } }),
       getInstruments(),
       getMyProfile(),
+      getLearningIds(),
     ]);
-    return { recs, instruments, myInstrumentIds: profile.instruments.map((i) => i.id) };
+    return {
+      recs,
+      instruments,
+      myInstrumentIds: profile.instruments.map((i) => i.id),
+      learningIds,
+    };
   },
   component: Discover,
 });
@@ -34,6 +41,7 @@ function Discover() {
   const [recs, setRecs] = useState<Recommendation[]>(data.recs);
   const [addTarget, setAddTarget] = useState<AddTarget | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [learningIds, setLearningIds] = useState<Set<number>>(new Set(data.learningIds));
 
   // keep local list in sync when the loader reloads (after refresh)
   const loaderKey = useMemo(() => data.recs.map((r) => r.song.id).join(","), [data.recs]);
@@ -41,6 +49,29 @@ function Discover() {
   if (seenKey !== loaderKey) {
     setSeenKey(loaderKey);
     setRecs(data.recs);
+    setLearningIds(new Set(data.learningIds));
+  }
+
+  async function toggleLearning(songId: number) {
+    const has = learningIds.has(songId);
+    setLearningIds((prev) => {
+      const next = new Set(prev);
+      if (has) next.delete(songId);
+      else next.add(songId);
+      return next;
+    });
+    try {
+      if (has) await removeFromLearning({ data: { songId } });
+      else await addToLearning({ data: { songId } });
+    } catch {
+      // revert on failure
+      setLearningIds((prev) => {
+        const next = new Set(prev);
+        if (has) next.add(songId);
+        else next.delete(songId);
+        return next;
+      });
+    }
   }
 
   /* ── Single shared preview player (only one song plays at a time) ────── */
@@ -146,8 +177,10 @@ function Discover() {
               key={rec.song.id}
               rec={rec}
               playing={activeId === rec.song.id}
+              isLearning={learningIds.has(rec.song.id)}
               onToggle={toggle}
               onEnterView={onEnterView}
+              onToggleLearning={() => toggleLearning(rec.song.id)}
               onAdd={() => openAdd(rec)}
               onSkip={() => skip(rec)}
             />
@@ -209,15 +242,19 @@ function FeedPlayButton({ playing, onClick }: { playing: boolean; onClick: () =>
 function FeedCard({
   rec,
   playing,
+  isLearning,
   onToggle,
   onEnterView,
+  onToggleLearning,
   onAdd,
   onSkip,
 }: {
   rec: Recommendation;
   playing: boolean;
+  isLearning: boolean;
   onToggle: (songId: number, url: string) => void;
   onEnterView: (songId: number, url: string) => void;
+  onToggleLearning: () => void;
   onAdd: () => void;
   onSkip: () => void;
 }) {
@@ -377,13 +414,30 @@ function FeedCard({
             </div>
           )}
 
-          <div className="mt-6 flex items-center gap-2.5">
+          <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <SolidCoral onClick={onAdd} className="px-6 py-3 text-sm">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6">
                 <path d="M12 5v14M5 12h14" />
               </svg>
               Add to my songs
             </SolidCoral>
+            <button
+              onClick={onToggleLearning}
+              aria-label={isLearning ? "Remove from Learning" : "Add to Learning"}
+              title={isLearning ? "In your Learning list" : "Add to Learning"}
+              className={cx(
+                "inline-flex items-center gap-1.5 rounded-full border px-4 py-3 text-sm font-semibold backdrop-blur transition active:scale-[0.97]",
+                isLearning
+                  ? "border-[var(--sp-aqua)] bg-[var(--sp-aqua)]/15 text-[var(--sp-aqua)]"
+                  : "border-white/25 bg-black/30 text-white/85 hover:bg-black/50",
+              )}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 4 2 9l10 5 10-5-10-5Z" />
+                <path d="M5 11v5c0 1.4 3.1 3 7 3s7-1.6 7-3v-5" />
+              </svg>
+              {isLearning ? "Learning" : "Learn"}
+            </button>
             <button
               onClick={onSkip}
               className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/30 px-5 py-3 text-sm font-semibold text-white/85 backdrop-blur transition hover:bg-black/50 active:scale-[0.97]"

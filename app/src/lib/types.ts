@@ -59,6 +59,13 @@ export interface MySong {
   note: string;
 }
 
+// A song on the viewer's "Learning" list (wants to learn / is working on it).
+export interface LearningSong {
+  song: SongStat;
+  inLibrary: boolean; // they can already play it (it's in their set too)
+  addedAt: string;
+}
+
 // Friendship of the viewer relative to another user.
 // 'me' — it's you · 'none' — no relation · 'outgoing' — you sent a request ·
 // 'incoming' — they sent you a request · 'friends' — connected.

@@ -51,6 +51,22 @@ function UserIcon() {
     </svg>
   );
 }
+function LearnIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M12 4 2 9l10 5 10-5-10-5Z" />
+      <path d="M5 11v5c0 1.4 3.1 3 7 3s7-1.6 7-3v-5" />
+      <path d="M22 9v5" />
+    </svg>
+  );
+}
 function FriendsIcon() {
   return (
     <svg
@@ -71,6 +87,7 @@ function FriendsIcon() {
 const NAV = [
   { to: "/discover", label: "Discover", icon: <CompassIcon /> },
   { to: "/library", label: "Library", icon: <LibraryIcon /> },
+  { to: "/learning", label: "Learning", icon: <LearnIcon /> },
   { to: "/friends", label: "Friends", icon: <FriendsIcon /> },
   { to: "/profile", label: "Profile", icon: <UserIcon /> },
 ] as const;
