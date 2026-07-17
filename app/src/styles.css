@@ -18,6 +18,7 @@
 @import "./components/setting-trigger/setting-trigger.css";
 @import "./components/prompt-box/prompt-box.css";
 @import "./components/icon-tile/icon-tile.css";
+@import "./components/sp/OptionWheel.css";
 
 @import "tw-animate-css";
 
