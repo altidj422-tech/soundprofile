@@ -188,16 +188,6 @@ function SongPage() {
         </div>
       </div>
 
-      {/* Tutorial: community-pinned embed + YouTube search */}
-      <TutorialPanel
-        songId={song.id}
-        title={song.title}
-        artist={song.artist}
-        instrument={learnInstrument}
-        tutorial={tutorial}
-        canContribute={canContribute}
-      />
-
       {/* Your entries */}
       {mine.length > 0 && (
         <div className="mt-6">
@@ -260,6 +250,16 @@ function SongPage() {
       )}
 
       {extras && <TechniquesPanel songId={song.id} extras={extras} />}
+
+      {/* Tutorial: community-pinned embed + YouTube search */}
+      <TutorialPanel
+        songId={song.id}
+        title={song.title}
+        artist={song.artist}
+        instrument={learnInstrument}
+        tutorial={tutorial}
+        canContribute={canContribute}
+      />
 
       {/* Players */}
       <div className="mt-8">
