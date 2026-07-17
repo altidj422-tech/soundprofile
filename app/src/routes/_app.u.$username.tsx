@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { difficultyLabel } from "../lib/catalog";
 import { getUserProfile } from "../lib/api/profile.functions";
+import { reportContent } from "../lib/api/reports.functions";
 import { FriendButton } from "../components/sp/FriendButton";
 import {
   Avatar,
@@ -23,6 +25,17 @@ export const Route = createFileRoute("/_app/u/$username")({
 function PublicProfile() {
   const { profile } = Route.useLoaderData();
   const router = useRouter();
+  const [reported, setReported] = useState(false);
+
+  async function reportUser(userId: number) {
+    if (reported) return;
+    setReported(true);
+    try {
+      await reportContent({ data: { targetType: "user", targetId: userId, songId: null } });
+    } catch {
+      /* keep optimistic */
+    }
+  }
 
   if (!profile) {
     return (
@@ -68,17 +81,26 @@ function PublicProfile() {
             </div>
             <p className="text-sm text-[var(--sp-muted)]">@{user.username}</p>
             {user.bio && <p className="mt-2 text-[15px] text-[var(--sp-ink)]/90">{user.bio}</p>}
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               {isMe ? (
                 <Link to="/profile">
                   <QuietGlass>Edit your profile</QuietGlass>
                 </Link>
               ) : (
-                <FriendButton
-                  userId={user.id}
-                  status={friendStatus}
-                  onChanged={() => router.invalidate()}
-                />
+                <>
+                  <FriendButton
+                    userId={user.id}
+                    status={friendStatus}
+                    onChanged={() => router.invalidate()}
+                  />
+                  <button
+                    onClick={() => reportUser(user.id)}
+                    disabled={reported}
+                    className="text-xs font-medium text-[var(--sp-faint)] transition hover:text-[var(--sp-coral)] disabled:hover:text-[var(--sp-faint)]"
+                  >
+                    {reported ? "Reported ✓" : "Report"}
+                  </button>
+                </>
               )}
             </div>
           </div>

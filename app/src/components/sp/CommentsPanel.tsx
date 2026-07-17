@@ -4,6 +4,7 @@ import { useState } from "react";
 import { shortDate } from "../../lib/catalog";
 import type { Comment, ViewerMeta } from "../../lib/types";
 import { addComment, deleteComment } from "../../lib/api/comments.functions";
+import { reportContent } from "../../lib/api/reports.functions";
 import { Avatar, RepBadge, SolidCoral, Spinner } from "./ui";
 
 export function CommentsPanel({
@@ -18,7 +19,18 @@ export function CommentsPanel({
   const router = useRouter();
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
+  const [reported, setReported] = useState<Set<number>>(new Set());
   const signedIn = viewer.userId > 0;
+
+  async function report(id: number) {
+    if (reported.has(id)) return;
+    setReported((prev) => new Set(prev).add(id));
+    try {
+      await reportContent({ data: { targetType: "comment", targetId: id, songId } });
+    } catch {
+      /* keep the optimistic state */
+    }
+  }
 
   async function post() {
     if (!body.trim() || posting) return;
@@ -94,14 +106,22 @@ export function CommentsPanel({
                   </Link>
                   <RepBadge reputation={c.reputation} />
                   <span className="text-[11px] text-[var(--sp-faint)]">{shortDate(c.createdAt)}</span>
-                  {c.canDelete && (
+                  {c.canDelete ? (
                     <button
                       onClick={() => remove(c.id)}
                       className="ml-auto text-[11px] font-medium text-[var(--sp-faint)] transition hover:text-[var(--sp-coral)]"
                     >
                       Delete
                     </button>
-                  )}
+                  ) : signedIn && !viewer.banned ? (
+                    <button
+                      onClick={() => report(c.id)}
+                      disabled={reported.has(c.id)}
+                      className="ml-auto text-[11px] font-medium text-[var(--sp-faint)] transition hover:text-[var(--sp-coral)] disabled:hover:text-[var(--sp-faint)]"
+                    >
+                      {reported.has(c.id) ? "Reported ✓" : "Report"}
+                    </button>
+                  ) : null}
                 </div>
                 <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-[var(--sp-ink)]/90">
                   {c.body}

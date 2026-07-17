@@ -263,6 +263,14 @@ function Landing() {
         <footer className="mt-12 flex flex-col items-center gap-2 border-t border-[var(--sp-line)] pt-8 text-center text-sm text-[var(--sp-faint)]">
           <Logo size={22} />
           <p>Made for musicians who are always learning.</p>
+          <div className="mt-1 flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-[var(--sp-muted)]">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-[var(--sp-muted)]">
+              Terms
+            </Link>
+          </div>
         </footer>
       </section>
     </div>

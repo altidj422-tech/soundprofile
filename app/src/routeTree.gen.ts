@@ -9,14 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as ResetRouteImport } from './routes/reset'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
+import { Route as AppModerationRouteImport } from './routes/_app.moderation'
 import { Route as AppLibraryRouteImport } from './routes/_app.library'
 import { Route as AppLearningRouteImport } from './routes/_app.learning'
 import { Route as AppFriendsRouteImport } from './routes/_app.friends'
@@ -24,6 +28,11 @@ import { Route as AppDiscoverRouteImport } from './routes/_app.discover'
 import { Route as AppUUsernameRouteImport } from './routes/_app.u.$username'
 import { Route as AppSongsIdRouteImport } from './routes/_app.songs.$id'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -37,6 +46,16 @@ const SignupRoute = SignupRouteImport.update({
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
   id: '/robots.txt',
   path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetRoute = ResetRouteImport.update({
+  id: '/reset',
+  path: '/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -61,6 +80,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppModerationRoute = AppModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
   getParentRoute: () => AppRoute,
 } as any)
 const AppLibraryRoute = AppLibraryRouteImport.update({
@@ -98,13 +122,17 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset': typeof ResetRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
   '/discover': typeof AppDiscoverRoute
   '/friends': typeof AppFriendsRoute
   '/learning': typeof AppLearningRoute
   '/library': typeof AppLibraryRoute
+  '/moderation': typeof AppModerationRoute
   '/profile': typeof AppProfileRoute
   '/songs/$id': typeof AppSongsIdRoute
   '/u/$username': typeof AppUUsernameRoute
@@ -113,13 +141,17 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset': typeof ResetRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
   '/discover': typeof AppDiscoverRoute
   '/friends': typeof AppFriendsRoute
   '/learning': typeof AppLearningRoute
   '/library': typeof AppLibraryRoute
+  '/moderation': typeof AppModerationRoute
   '/profile': typeof AppProfileRoute
   '/songs/$id': typeof AppSongsIdRoute
   '/u/$username': typeof AppUUsernameRoute
@@ -130,13 +162,17 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset': typeof ResetRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
   '/_app/discover': typeof AppDiscoverRoute
   '/_app/friends': typeof AppFriendsRoute
   '/_app/learning': typeof AppLearningRoute
   '/_app/library': typeof AppLibraryRoute
+  '/_app/moderation': typeof AppModerationRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/songs/$id': typeof AppSongsIdRoute
   '/_app/u/$username': typeof AppUUsernameRoute
@@ -147,13 +183,17 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/privacy'
+    | '/reset'
     | '/robots.txt'
     | '/signup'
     | '/sitemap.xml'
+    | '/terms'
     | '/discover'
     | '/friends'
     | '/learning'
     | '/library'
+    | '/moderation'
     | '/profile'
     | '/songs/$id'
     | '/u/$username'
@@ -162,13 +202,17 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/privacy'
+    | '/reset'
     | '/robots.txt'
     | '/signup'
     | '/sitemap.xml'
+    | '/terms'
     | '/discover'
     | '/friends'
     | '/learning'
     | '/library'
+    | '/moderation'
     | '/profile'
     | '/songs/$id'
     | '/u/$username'
@@ -178,13 +222,17 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/onboarding'
+    | '/privacy'
+    | '/reset'
     | '/robots.txt'
     | '/signup'
     | '/sitemap.xml'
+    | '/terms'
     | '/_app/discover'
     | '/_app/friends'
     | '/_app/learning'
     | '/_app/library'
+    | '/_app/moderation'
     | '/_app/profile'
     | '/_app/songs/$id'
     | '/_app/u/$username'
@@ -195,13 +243,23 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  PrivacyRoute: typeof PrivacyRoute
+  ResetRoute: typeof ResetRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TermsRoute: typeof TermsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -221,6 +279,20 @@ declare module '@tanstack/react-router' {
       path: '/robots.txt'
       fullPath: '/robots.txt'
       preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset': {
+      id: '/reset'
+      path: '/reset'
+      fullPath: '/reset'
+      preLoaderRoute: typeof ResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -256,6 +328,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/moderation': {
+      id: '/_app/moderation'
+      path: '/moderation'
+      fullPath: '/moderation'
+      preLoaderRoute: typeof AppModerationRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/library': {
@@ -308,6 +387,7 @@ interface AppRouteChildren {
   AppFriendsRoute: typeof AppFriendsRoute
   AppLearningRoute: typeof AppLearningRoute
   AppLibraryRoute: typeof AppLibraryRoute
+  AppModerationRoute: typeof AppModerationRoute
   AppProfileRoute: typeof AppProfileRoute
   AppSongsIdRoute: typeof AppSongsIdRoute
   AppUUsernameRoute: typeof AppUUsernameRoute
@@ -318,6 +398,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFriendsRoute: AppFriendsRoute,
   AppLearningRoute: AppLearningRoute,
   AppLibraryRoute: AppLibraryRoute,
+  AppModerationRoute: AppModerationRoute,
   AppProfileRoute: AppProfileRoute,
   AppSongsIdRoute: AppSongsIdRoute,
   AppUUsernameRoute: AppUUsernameRoute,
@@ -330,9 +411,12 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  PrivacyRoute: PrivacyRoute,
+  ResetRoute: ResetRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TermsRoute: TermsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -107,6 +107,18 @@ function SignupPage() {
             </PrimaryCTA>
           </form>
 
+          <p className="mt-4 text-center text-xs leading-relaxed text-[var(--sp-faint)]">
+            By creating an account you agree to our{" "}
+            <Link to="/terms" className="text-[var(--sp-muted)] underline hover:text-[var(--sp-ink)]">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="text-[var(--sp-muted)] underline hover:text-[var(--sp-ink)]">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+
           <p className="mt-6 text-center text-sm text-[var(--sp-muted)]">
             Already have an account?{" "}
             <Link to="/login" className="font-semibold text-[var(--sp-aqua)] hover:underline">

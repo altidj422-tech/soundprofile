@@ -12,6 +12,8 @@ import {
   updateProfile,
 } from "../lib/api/profile.functions";
 import { logout } from "../lib/api/auth.functions";
+import { generateRecoveryCode, getRecoveryStatus } from "../lib/api/recovery.functions";
+import { getMyMeta } from "../lib/api/reports.functions";
 import { removeUserSong } from "../lib/api/songs.functions";
 import { AddSongDialog, type AddTarget } from "../components/sp/AddSongDialog";
 import BorderGlow from "../components/reactbits/BorderGlow";
@@ -29,8 +31,13 @@ import {
 
 export const Route = createFileRoute("/_app/profile")({
   loader: async () => {
-    const [profile, instruments] = await Promise.all([getMyProfile(), getInstruments()]);
-    return { profile, instruments };
+    const [profile, instruments, recovery, meta] = await Promise.all([
+      getMyProfile(),
+      getInstruments(),
+      getRecoveryStatus(),
+      getMyMeta(),
+    ]);
+    return { profile, instruments, recovery, meta };
   },
   component: ProfilePage,
 });
@@ -44,7 +51,7 @@ async function handleLogout() {
 }
 
 function ProfilePage() {
-  const { profile, instruments } = Route.useLoaderData();
+  const { profile, instruments, recovery, meta } = Route.useLoaderData();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [editingInstruments, setEditingInstruments] = useState(false);
@@ -111,6 +118,11 @@ function ProfilePage() {
                   <Link to="/u/$username" params={{ username: profile.user.username }}>
                     <QuietGlass>View public page</QuietGlass>
                   </Link>
+                  {meta.isModerator && (
+                    <Link to="/moderation">
+                      <QuietGlass>🛡️ Moderation</QuietGlass>
+                    </Link>
+                  )}
                 </div>
               </>
             )}
@@ -231,6 +243,9 @@ function ProfilePage() {
         )}
       </div>
 
+      {/* Account recovery */}
+      <RecoveryCard hasCode={recovery.hasCode} />
+
       {/* Sign out — mobile only (desktop has it in the sidebar) */}
       <div className="mt-10 flex justify-center lg:hidden">
         <button
@@ -249,6 +264,74 @@ function ProfilePage() {
         myInstrumentIds={myInstrumentIds}
         onAdded={() => router.invalidate()}
       />
+    </div>
+  );
+}
+
+function RecoveryCard({ hasCode }: { hasCode: boolean }) {
+  const [code, setCode] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [has, setHas] = useState(hasCode);
+
+  async function generate() {
+    setBusy(true);
+    try {
+      const res = await generateRecoveryCode();
+      setCode(res.code);
+      setHas(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copy() {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard may be unavailable; the code is still visible to copy manually */
+    }
+  }
+
+  return (
+    <div className="mt-8">
+      <h2 className="font-display mb-3 text-lg font-semibold">Account recovery</h2>
+      <div className="sp-card p-5">
+        {code ? (
+          <>
+            <p className="text-sm text-[var(--sp-muted)]">
+              Save this recovery code somewhere safe — it&apos;s the only way to reset your password
+              if you forget it, and{" "}
+              <span className="font-semibold text-[var(--sp-ink)]">you won&apos;t see it again</span>.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <code className="flex-1 rounded-xl border border-[var(--sp-aqua)]/40 bg-[var(--sp-aqua)]/[0.08] px-4 py-3 text-center font-mono text-base font-semibold tracking-[0.2em] text-[var(--sp-ink)]">
+                {code}
+              </code>
+              <button
+                onClick={copy}
+                className="shrink-0 rounded-xl border border-[var(--sp-line-strong)] px-3.5 py-3 text-sm font-semibold text-[var(--sp-muted)] transition hover:text-[var(--sp-ink)]"
+              >
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-md text-sm text-[var(--sp-muted)]">
+              {has
+                ? "A recovery code is set. Lost it? Regenerate a new one (the old one stops working)."
+                : "Set up a recovery code so you can reset your password if you ever forget it. There's no email reset yet, so this is how you get back in."}
+            </p>
+            <QuietGlass onClick={generate} disabled={busy}>
+              {busy ? <Spinner /> : has ? "Regenerate code" : "Generate recovery code"}
+            </QuietGlass>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

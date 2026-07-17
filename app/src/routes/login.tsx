@@ -89,6 +89,12 @@ function LoginPage() {
             </PrimaryCTA>
           </form>
 
+          <p className="mt-3 text-center text-sm">
+            <Link to="/reset" className="font-medium text-[var(--sp-faint)] hover:text-[var(--sp-muted)]">
+              Forgot your password?
+            </Link>
+          </p>
+
           <p className="mt-6 text-center text-sm text-[var(--sp-muted)]">
             New here?{" "}
             <Link to="/signup" className="font-semibold text-[var(--sp-aqua)] hover:underline">
