@@ -13,6 +13,7 @@ import {
 } from "../lib/api/profile.functions";
 import { removeUserSong } from "../lib/api/songs.functions";
 import { AddSongDialog, type AddTarget } from "../components/sp/AddSongDialog";
+import BorderGlow from "../components/reactbits/BorderGlow";
 import {
   Avatar,
   DifficultyMeter,
@@ -63,7 +64,15 @@ function ProfilePage() {
   return (
     <div className="mx-auto max-w-4xl px-5 pb-28 pt-8 lg:pb-12 lg:pt-10">
       {/* Header */}
-      <div className="sp-card p-6">
+      <BorderGlow
+        glowColor="169 78 55"
+        colors={["#ff5d73", "#ff9c5b", "#33e6c4"]}
+        backgroundColor="#141026"
+        borderRadius={16}
+        glowRadius={30}
+        edgeSensitivity={24}
+      >
+        <div className="p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <AvatarEditor
             name={profile.user.displayName}
@@ -110,7 +119,8 @@ function ProfilePage() {
             <Stat label="Friends" value={profile.stats.friendCount} interactive />
           </Link>
         </div>
-      </div>
+        </div>
+      </BorderGlow>
 
       {/* Instruments */}
       <div className="mt-6">
