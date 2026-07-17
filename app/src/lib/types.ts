@@ -100,12 +100,23 @@ export interface ProfileSummary {
   friendStatus: FriendStatus;
 }
 
+// A friend of the viewer who plays a given song (shown on feed cards).
+export interface FeedFriend {
+  username: string;
+  displayName: string;
+  avatarHue: number;
+  avatarUrl: string;
+  instrument: Instrument | null; // what they play it on, if known
+}
+
 export interface Recommendation {
   song: SongStat;
   reason: string;
   score: number;
   sharedWith: number; // similar musicians who play it
   matchingInstruments: Instrument[]; // instruments you play that fit this song
+  tags: TechniqueTag[]; // community technique tags on this song
+  friendsPlaying: FeedFriend[]; // your friends who play this song
 }
 
 export interface SongPlayer {

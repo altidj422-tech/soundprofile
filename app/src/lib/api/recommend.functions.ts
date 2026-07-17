@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import type { Instrument, Recommendation, SongStat } from "../types";
+import type { FeedFriend, Instrument, Recommendation, SongStat, TechniqueTag } from "../types";
 import { db } from "../db.server";
 import { requireUser } from "../session.server";
 
@@ -30,19 +30,29 @@ export const getRecommendations = createServerFn({ method: "GET" })
     const me = await requireUser();
     const database = db();
 
-    const [songsRes, instRes, userSongsRes, userInstRes, dismissedRes] = await Promise.all([
-      database
-        .prepare("SELECT id, title, artist, genre, year, hue, artwork_url, preview_url FROM songs")
-        .all<SongMeta>(),
-      database.prepare("SELECT id, name, slug, emoji FROM instruments").all<Instrument>(),
-      database
-        .prepare("SELECT user_id, song_id, instrument_id, difficulty FROM user_songs")
-        .all<{ user_id: number; song_id: number; instrument_id: number; difficulty: number }>(),
-      database
-        .prepare("SELECT user_id, instrument_id FROM user_instruments")
-        .all<{ user_id: number; instrument_id: number }>(),
-      database.prepare("SELECT song_id FROM dismissed WHERE user_id = ?").bind(me.id).all<{ song_id: number }>(),
-    ]);
+    const [songsRes, instRes, userSongsRes, userInstRes, dismissedRes, friendshipsRes] =
+      await Promise.all([
+        database
+          .prepare("SELECT id, title, artist, genre, year, hue, artwork_url, preview_url FROM songs")
+          .all<SongMeta>(),
+        database.prepare("SELECT id, name, slug, emoji FROM instruments").all<Instrument>(),
+        database
+          .prepare("SELECT user_id, song_id, instrument_id, difficulty FROM user_songs")
+          .all<{ user_id: number; song_id: number; instrument_id: number; difficulty: number }>(),
+        database
+          .prepare("SELECT user_id, instrument_id FROM user_instruments")
+          .all<{ user_id: number; instrument_id: number }>(),
+        database
+          .prepare("SELECT song_id FROM dismissed WHERE user_id = ?")
+          .bind(me.id)
+          .all<{ song_id: number }>(),
+        database
+          .prepare(
+            "SELECT user_id, friend_id FROM friendships WHERE (user_id = ? OR friend_id = ?) AND status = 'accepted'",
+          )
+          .bind(me.id, me.id)
+          .all<{ user_id: number; friend_id: number }>(),
+      ]);
 
     const songMeta = new Map<number, SongMeta>();
     for (const s of songsRes.results ?? []) songMeta.set(s.id, s);
@@ -74,6 +84,13 @@ export const getRecommendations = createServerFn({ method: "GET" })
     const mySongs = perUserSongs.get(me.id) ?? new Set<number>();
     const myInsts = perUserInsts.get(me.id) ?? new Set<number>();
     const dismissed = new Set<number>((dismissedRes.results ?? []).map((d) => d.song_id));
+
+    // The viewer's accepted friends (either direction of the edge).
+    const friendIds = new Set<number>();
+    for (const f of friendshipsRes.results ?? []) {
+      const other = f.user_id === me.id ? f.friend_id : f.user_id;
+      if (other !== me.id) friendIds.add(other);
+    }
 
     const jaccard = (a: Set<number>, b: Set<number>): number => {
       if (a.size === 0 || b.size === 0) return 0;
@@ -161,10 +178,113 @@ export const getRecommendations = createServerFn({ method: "GET" })
     });
 
     const top = scored.slice(0, data.limit);
+    const topIds = top.map((t) => t.id);
+
+    // ── Enrich the visible picks (scoped to top N — cheap) ──────────────
+    // Friends of the viewer who play each top song.
+    const friendPlayersBySong = new Map<number, number[]>();
+    const neededFriendIds = new Set<number>();
+    for (const { id } of top) {
+      const players = songPlayers.get(id);
+      if (!players) continue;
+      const fs: number[] = [];
+      for (const uid of players) {
+        if (friendIds.has(uid)) {
+          fs.push(uid);
+          neededFriendIds.add(uid);
+        }
+      }
+      if (fs.length) friendPlayersBySong.set(id, fs);
+    }
+
+    // Hydrate identities for just the friends that appear on a top song.
+    const friendInfo = new Map<
+      number,
+      { username: string; displayName: string; avatarHue: number; avatarUrl: string }
+    >();
+    if (neededFriendIds.size) {
+      const ids = [...neededFriendIds];
+      const ph = ids.map(() => "?").join(", ");
+      const ures = await database
+        .prepare(
+          `SELECT id, username, display_name, avatar_hue, avatar_url FROM users WHERE id IN (${ph})`,
+        )
+        .bind(...ids)
+        .all<{
+          id: number;
+          username: string;
+          display_name: string;
+          avatar_hue: number;
+          avatar_url: string;
+        }>();
+      for (const u of ures.results ?? []) {
+        friendInfo.set(u.id, {
+          username: u.username,
+          displayName: u.display_name,
+          avatarHue: u.avatar_hue,
+          avatarUrl: u.avatar_url ?? "",
+        });
+      }
+    }
+
+    // Which instrument each friend plays a given top song on (scan the rows
+    // already in memory, but only keep entries for top songs + real friends).
+    const friendInstBySongUser = new Map<string, number>();
+    if (neededFriendIds.size) {
+      for (const r of userSongsRes.results ?? []) {
+        if (friendPlayersBySong.has(r.song_id) && neededFriendIds.has(r.user_id)) {
+          const k = `${r.song_id}:${r.user_id}`;
+          if (!friendInstBySongUser.has(k)) friendInstBySongUser.set(k, r.instrument_id);
+        }
+      }
+    }
+
+    // Community technique tags for the top songs (skip banned authors).
+    const tagsBySong = new Map<number, TechniqueTag[]>();
+    if (topIds.length) {
+      const ph = topIds.map(() => "?").join(", ");
+      const tres = await database
+        .prepare(
+          `SELECT sa.song_id AS song_id, t.id AS id, t.name AS name, t.slug AS slug
+           FROM song_annotations sa
+           JOIN annotation_tags atg ON atg.annotation_id = sa.id
+           JOIN technique_tags t ON t.id = atg.tag_id
+           JOIN users au ON au.id = sa.author_id
+           WHERE sa.song_id IN (${ph}) AND au.banned = 0
+           ORDER BY t.id`,
+        )
+        .bind(...topIds)
+        .all<{ song_id: number; id: number; name: string; slug: string }>();
+      for (const r of tres.results ?? []) {
+        if (!tagsBySong.has(r.song_id)) tagsBySong.set(r.song_id, []);
+        tagsBySong.get(r.song_id)!.push({ id: r.id, name: r.name, slug: r.slug });
+      }
+    }
+
+    const buildFriends = (id: number): FeedFriend[] => {
+      const fs = friendPlayersBySong.get(id);
+      if (!fs) return [];
+      const out: FeedFriend[] = [];
+      for (const uid of fs) {
+        const info = friendInfo.get(uid);
+        if (!info) continue;
+        const instId = friendInstBySongUser.get(`${id}:${uid}`);
+        const instrument = instId != null ? (instMeta.get(instId) ?? null) : null;
+        out.push({ ...info, instrument });
+      }
+      return out;
+    };
+
     return top.map(({ id, score, sharedWith }): Recommendation => {
       const matchingInstruments = matchingInstrumentsFor(id);
+      const friendsPlaying = buildFriends(id);
       let reason: string;
-      if (sharedWith > 0) {
+      if (friendsPlaying.length > 0) {
+        reason =
+          friendsPlaying.length === 1
+            ? `${friendsPlaying[0].displayName} plays this`
+            : `${friendsPlaying.length} friends play this`;
+      } else if (sharedWith > 0) {
         reason =
           sharedWith === 1
             ? "1 musician with your taste plays this"
@@ -174,7 +294,15 @@ export const getRecommendations = createServerFn({ method: "GET" })
       } else {
         reason = "Rising in the community";
       }
-      return { song: buildStat(id), reason, score, sharedWith, matchingInstruments };
+      return {
+        song: buildStat(id),
+        reason,
+        score,
+        sharedWith,
+        matchingInstruments,
+        tags: tagsBySong.get(id) ?? [],
+        friendsPlaying,
+      };
     });
   });
 
