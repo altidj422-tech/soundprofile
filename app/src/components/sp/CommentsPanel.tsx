@@ -52,7 +52,7 @@ export function CommentsPanel({
   }
 
   return (
-    <div className="mt-8">
+    <div id="comments" className="mt-8 scroll-mt-4">
       <h2 className="font-display mb-3 text-lg font-semibold">
         Comments <span className="text-sm font-normal text-[var(--sp-faint)]">({comments.length})</span>
       </h2>
