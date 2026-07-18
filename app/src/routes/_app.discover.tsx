@@ -152,6 +152,86 @@ function Discover() {
 
   useEffect(() => () => audioRef.current?.pause(), []);
 
+  /* ── Feed scrolling: keyboard, drag, and refresh ─────────────────────── */
+  const feedRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ startY: number; startTop: number; moved: boolean } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Arrow/Page keys move a whole card. Native key scrolling is only ~40px,
+  // which `scroll-snap-type: y mandatory` immediately snaps back — which is why
+  // only Space (a full-viewport jump) appeared to work.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = feedRef.current;
+      if (!el || dialogOpen) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+
+      let dir = 0;
+      if (e.key === "ArrowDown" || e.key === "PageDown") dir = 1;
+      else if (e.key === "ArrowUp" || e.key === "PageUp") dir = -1;
+      else if (e.key === "Home") {
+        e.preventDefault();
+        el.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      } else return;
+
+      e.preventDefault();
+      el.scrollBy({ top: dir * el.clientHeight, behavior: "smooth" });
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dialogOpen]);
+
+  // Click-and-drag to scroll (mouse only — touch already scrolls natively).
+  // Snapping is disabled mid-drag so it doesn't fight the pointer, then we snap
+  // to the nearest card on release.
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    const t = e.target as HTMLElement;
+    if (t.closest("button, a, input, textarea")) return; // let controls work
+    const el = feedRef.current;
+    if (!el) return;
+    dragRef.current = { startY: e.clientY, startTop: el.scrollTop, moved: false };
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const d = dragRef.current;
+    const el = feedRef.current;
+    if (!d || !el) return;
+    const dy = e.clientY - d.startY;
+    if (!d.moved) {
+      if (Math.abs(dy) < 4) return;
+      d.moved = true;
+      el.style.scrollSnapType = "none";
+    }
+    el.scrollTop = d.startTop - dy;
+  }
+
+  function endDrag() {
+    const d = dragRef.current;
+    const el = feedRef.current;
+    dragRef.current = null;
+    if (!d || !el || !d.moved) return;
+    el.style.scrollSnapType = "";
+    const h = el.clientHeight || 1;
+    el.scrollTo({ top: Math.round(el.scrollTop / h) * h, behavior: "smooth" });
+  }
+
+  // Refresh re-runs the loader AND returns you to the top — without the scroll
+  // reset it silently did nothing visible when the picks were unchanged.
+  async function refresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    stop();
+    try {
+      await router.invalidate();
+    } finally {
+      setRefreshing(false);
+      feedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   function remove(songId: number) {
     setRecs((prev) => prev.filter((r) => r.song.id !== songId));
     if (activeIdRef.current === songId) stop();
@@ -186,16 +266,27 @@ function Discover() {
           For you
         </span>
         <button
-          onClick={() => router.invalidate()}
-          className="pointer-events-auto rounded-full bg-black/40 px-3.5 py-1.5 text-sm font-semibold text-[var(--sp-muted)] backdrop-blur transition hover:text-[var(--sp-ink)]"
+          onClick={refresh}
+          disabled={refreshing}
+          className="pointer-events-auto rounded-full bg-black/40 px-3.5 py-1.5 text-sm font-semibold text-[var(--sp-muted)] backdrop-blur transition hover:text-[var(--sp-ink)] disabled:opacity-60"
         >
-          ↻ Refresh
+          <span className={cx("inline-block", refreshing && "animate-spin")}>↻</span>{" "}
+          {refreshing ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
-      <div className="sp-feed h-[calc(100dvh-118px)] overflow-y-auto lg:h-dvh">
+      <div
+        ref={feedRef}
+        tabIndex={0}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onPointerLeave={endDrag}
+        className="sp-feed h-[calc(100dvh-118px)] overflow-y-auto outline-none lg:h-dvh"
+      >
         {recs.length === 0 ? (
-          <AllCaught onRefresh={() => router.invalidate()} />
+          <AllCaught onRefresh={refresh} />
         ) : (
           recs.map((rec) => (
             <FeedCard
@@ -244,7 +335,7 @@ function FeedPlayButton({ playing, onClick }: { playing: boolean; onClick: () =>
       onClick={onClick}
       aria-label={playing ? "Pause preview" : "Play preview"}
       className={cx(
-        "pointer-events-auto grid h-[72px] w-[72px] place-items-center rounded-full border text-white backdrop-blur-xl transition active:scale-95",
+        "grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full border text-white backdrop-blur-xl transition active:scale-95",
         playing
           ? "sp-playing-ring border-[var(--sp-coral)]/60 bg-black/45"
           : "border-white/30 bg-black/35 hover:bg-black/55",
@@ -325,17 +416,23 @@ function FeedCard({
       {song.artworkUrl && <div className="absolute inset-0 bg-black/30" />}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,14,26,0.55)_0%,rgba(11,14,26,0.1)_28%,rgba(11,14,26,0.25)_55%,rgba(11,14,26,0.92)_100%)]" />
 
-      {/* Big centered player over the artwork */}
-      {song.previewUrl && (
-        <div className="pointer-events-none absolute inset-x-0 top-[26%] z-10 flex flex-col items-center gap-2.5">
-          <FeedPlayButton playing={playing} onClick={() => onToggle(song.id, song.previewUrl)} />
-          <span className="pointer-events-none rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white/85 backdrop-blur">
-            {playing ? "Now playing · 30s preview" : "Tap to preview"}
-          </span>
+      <div className="relative mx-auto flex h-full max-w-xl flex-col px-4 pb-8 pt-20 sm:px-6">
+        {/* Player lives in the free space ABOVE the card, so it can never
+            overlap it however tall the card grows. */}
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5 py-2">
+          {song.previewUrl && (
+            <>
+              <FeedPlayButton
+                playing={playing}
+                onClick={() => onToggle(song.id, song.previewUrl)}
+              />
+              <span className="rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white/85 backdrop-blur">
+                {playing ? "Now playing · 30s preview" : "Tap to preview"}
+              </span>
+            </>
+          )}
         </div>
-      )}
 
-      <div className="relative mx-auto flex h-full max-w-xl flex-col justify-end px-4 pb-8 pt-20 sm:px-6">
         <div className="rounded-[26px] border border-white/12 bg-black/40 p-5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:p-6">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--sp-coral)]/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg">
