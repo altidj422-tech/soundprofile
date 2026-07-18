@@ -5,6 +5,7 @@ import { difficultyLabel } from "../lib/catalog";
 import { getSongExtras } from "../lib/api/annotations.functions";
 import { getComments } from "../lib/api/comments.functions";
 import { addToLearning, getLearningIds, removeFromLearning } from "../lib/api/learning.functions";
+import { likeSong, unlikeSong } from "../lib/api/likes.functions";
 import { getInstruments, getMyProfile } from "../lib/api/profile.functions";
 import { getSongDetail, removeUserSong } from "../lib/api/songs.functions";
 import { getSongTutorial } from "../lib/api/tutorials.functions";
@@ -66,6 +67,26 @@ function SongPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [learning, setLearning] = useState(isLearning);
   const [learningBusy, setLearningBusy] = useState(false);
+  const [liked, setLiked] = useState(detail?.likedByMe ?? false);
+  const [likeCount, setLikeCount] = useState(detail?.likes ?? 0);
+  const [likeBusy, setLikeBusy] = useState(false);
+
+  async function toggleLike(songId: number) {
+    if (likeBusy) return;
+    const next = !liked;
+    setLiked(next);
+    setLikeCount((c) => c + (next ? 1 : -1));
+    setLikeBusy(true);
+    try {
+      if (next) await likeSong({ data: { songId } });
+      else await unlikeSong({ data: { songId } });
+    } catch {
+      setLiked(!next);
+      setLikeCount((c) => c + (next ? -1 : 1));
+    } finally {
+      setLikeBusy(false);
+    }
+  }
 
   async function toggleLearning(songId: number) {
     if (learningBusy) return;
@@ -163,6 +184,29 @@ function SongPage() {
                   <path d="M5 11v5c0 1.4 3.1 3 7 3s7-1.6 7-3v-5" />
                 </svg>
                 {learning ? "In Learning" : "Learn this"}
+              </button>
+              <button
+                onClick={() => toggleLike(song.id)}
+                disabled={likeBusy}
+                aria-label={liked ? "Unlike this song" : "Like this song"}
+                className={cx(
+                  "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-semibold transition active:scale-[0.97] disabled:opacity-60",
+                  liked
+                    ? "border-[var(--sp-coral)] bg-[var(--sp-coral)]/15 text-[var(--sp-coral)]"
+                    : "border-[var(--sp-line-strong)] bg-white/[0.03] text-[var(--sp-muted)] hover:text-[var(--sp-ink)]",
+                )}
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill={liked ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 20.5 4.6 13a4.6 4.6 0 1 1 6.5-6.5l.9.9.9-.9A4.6 4.6 0 1 1 19.4 13z" />
+                </svg>
+                {likeCount > 0 ? likeCount : "Like"}
               </button>
             </div>
           </div>

@@ -165,7 +165,25 @@ export const getSongDetail = createServerFn({ method: "GET" })
       mine = allMine.filter((m) => m.song.id === data.songId);
     }
 
-    return { song, players, byInstrument, mine };
+    const likeCount = await database
+      .prepare("SELECT COUNT(*) AS n FROM song_likes WHERE song_id = ?")
+      .bind(data.songId)
+      .first<{ n: number }>();
+    const likedRow = viewer
+      ? await database
+          .prepare("SELECT 1 AS x FROM song_likes WHERE song_id = ? AND user_id = ?")
+          .bind(data.songId, viewer.id)
+          .first<{ x: number }>()
+      : null;
+
+    return {
+      song,
+      players,
+      byInstrument,
+      mine,
+      likes: likeCount?.n ?? 0,
+      likedByMe: !!likedRow,
+    };
   });
 
 const addSchema = z.object({

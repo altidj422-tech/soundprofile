@@ -30,7 +30,7 @@ export const getRecommendations = createServerFn({ method: "GET" })
     const me = await requireUser();
     const database = db();
 
-    const [songsRes, instRes, userSongsRes, userInstRes, dismissedRes, friendshipsRes] =
+    const [songsRes, instRes, userSongsRes, userInstRes, dismissedRes, friendshipsRes, likesRes] =
       await Promise.all([
         database
           .prepare("SELECT id, title, artist, genre, year, hue, artwork_url, preview_url FROM songs")
@@ -52,6 +52,9 @@ export const getRecommendations = createServerFn({ method: "GET" })
           )
           .bind(me.id, me.id)
           .all<{ user_id: number; friend_id: number }>(),
+        database
+          .prepare("SELECT user_id, song_id FROM song_likes")
+          .all<{ user_id: number; song_id: number }>(),
       ]);
 
     const songMeta = new Map<number, SongMeta>();
@@ -81,8 +84,19 @@ export const getRecommendations = createServerFn({ method: "GET" })
       perUserInsts.get(r.user_id)!.add(r.instrument_id);
     }
 
+    // Likes — a denser, lower-friction taste signal than "songs I can play".
+    const perUserLikes = new Map<number, Set<number>>();
+    const songLikers = new Map<number, Set<number>>();
+    for (const r of likesRes.results ?? []) {
+      if (!perUserLikes.has(r.user_id)) perUserLikes.set(r.user_id, new Set());
+      perUserLikes.get(r.user_id)!.add(r.song_id);
+      if (!songLikers.has(r.song_id)) songLikers.set(r.song_id, new Set());
+      songLikers.get(r.song_id)!.add(r.user_id);
+    }
+
     const mySongs = perUserSongs.get(me.id) ?? new Set<number>();
     const myInsts = perUserInsts.get(me.id) ?? new Set<number>();
+    const myLikes = perUserLikes.get(me.id) ?? new Set<number>();
     const dismissed = new Set<number>((dismissedRes.results ?? []).map((d) => d.song_id));
 
     // The viewer's accepted friends (either direction of the edge).
@@ -100,24 +114,24 @@ export const getRecommendations = createServerFn({ method: "GET" })
       return union === 0 ? 0 : inter / union;
     };
 
-    // similarity of every other user to me
+    // Similarity of every other user to me, over three signals. "Can play" is
+    // earned so it keeps the largest weight; likes are cheap but far denser,
+    // which is what rescues the sparsity problem. Jaccard self-damps prolific
+    // likers (a huge like set inflates the union, lowering similarity), so no
+    // extra normalisation is needed.
     const sim = new Map<number, number>();
     let anySimilarity = false;
-    for (const uid of perUserSongs.keys()) {
+    const allUsers = new Set<number>([
+      ...perUserSongs.keys(),
+      ...perUserLikes.keys(),
+      ...perUserInsts.keys(),
+    ]);
+    for (const uid of allUsers) {
       if (uid === me.id) continue;
       const jSongs = jaccard(mySongs, perUserSongs.get(uid) ?? new Set());
+      const jLikes = jaccard(myLikes, perUserLikes.get(uid) ?? new Set());
       const jInst = jaccard(myInsts, perUserInsts.get(uid) ?? new Set());
-      const s = 0.72 * jSongs + 0.28 * jInst;
-      if (s > 0) {
-        sim.set(uid, s);
-        anySimilarity = true;
-      }
-    }
-    // include users who only share instruments (no songs)
-    for (const uid of perUserInsts.keys()) {
-      if (uid === me.id || sim.has(uid)) continue;
-      const jInst = jaccard(myInsts, perUserInsts.get(uid) ?? new Set());
-      const s = 0.28 * jInst;
+      const s = 0.55 * jSongs + 0.25 * jLikes + 0.2 * jInst;
       if (s > 0) {
         sim.set(uid, s);
         anySimilarity = true;
@@ -152,16 +166,25 @@ export const getRecommendations = createServerFn({ method: "GET" })
     type Scored = { id: number; score: number; sharedWith: number };
     const scored: Scored[] = [];
 
-    for (const [id, players] of songPlayers) {
-      if (mySongs.has(id) || dismissed.has(id) || !songMeta.has(id)) continue;
+    // Candidates: anything someone plays OR likes (a song can surface purely on
+    // likes, before anyone here can play it). Liking removes a song from your
+    // future feeds — it has already done its job as a signal.
+    const candidateIds = new Set<number>([...songPlayers.keys(), ...songLikers.keys()]);
+    for (const id of candidateIds) {
+      if (mySongs.has(id) || dismissed.has(id) || myLikes.has(id) || !songMeta.has(id)) continue;
+      const players = songPlayers.get(id) ?? new Set<number>();
+      const likers = songLikers.get(id) ?? new Set<number>();
+
       let score = 0;
       let sharedWith = 0;
-      for (const uid of players) {
+      // One contribution per user — playing SUBSUMES liking, so we take the
+      // stronger weight rather than summing (summing would double-count anyone
+      // who both plays and likes, quietly inflating popular tracks).
+      for (const uid of new Set<number>([...players, ...likers])) {
         const s = sim.get(uid);
-        if (s && s > 0) {
-          score += s;
-          sharedWith++;
-        }
+        if (!s || s <= 0) continue;
+        score += s * (players.has(uid) ? 1 : 0.6);
+        sharedWith++;
       }
       // slight popularity nudge so ties resolve toward proven songs
       const popularity = 0.04 * Math.log(1 + players.size);
@@ -285,10 +308,12 @@ export const getRecommendations = createServerFn({ method: "GET" })
             ? `${friendsPlaying[0].displayName} plays this`
             : `${friendsPlaying.length} friends play this`;
       } else if (sharedWith > 0) {
+        // sharedWith now counts people who play OR like it, so keep the wording
+        // broad rather than claiming they all play it.
         reason =
           sharedWith === 1
-            ? "1 musician with your taste plays this"
-            : `${sharedWith} musicians with your taste play this`;
+            ? "1 musician with your taste is into this"
+            : `${sharedWith} musicians with your taste are into this`;
       } else if (matchingInstruments.length > 0) {
         reason = `A go-to for ${matchingInstruments[0].name} players`;
       } else {
@@ -302,6 +327,7 @@ export const getRecommendations = createServerFn({ method: "GET" })
         matchingInstruments,
         tags: tagsBySong.get(id) ?? [],
         friendsPlaying,
+        likes: songLikers.get(id)?.size ?? 0,
       };
     });
   });

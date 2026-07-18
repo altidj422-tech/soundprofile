@@ -124,6 +124,7 @@ export interface Recommendation {
   matchingInstruments: Instrument[]; // instruments you play that fit this song
   tags: TechniqueTag[]; // community technique tags on this song
   friendsPlaying: FeedFriend[]; // your friends who play this song
+  likes: number; // how many musicians have liked this song
 }
 
 export interface SongPlayer {
@@ -140,6 +141,8 @@ export interface SongDetail {
   players: SongPlayer[];
   byInstrument: { instrument: Instrument; avgDifficulty: number; players: number }[];
   mine: MySong[];
+  likes: number;
+  likedByMe: boolean;
 }
 
 export interface SearchSong extends SongStat {

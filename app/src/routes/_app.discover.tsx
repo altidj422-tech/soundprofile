@@ -5,6 +5,7 @@ import type { FeedFriend, Recommendation } from "../lib/types";
 import { getInstruments, getMyProfile } from "../lib/api/profile.functions";
 import { dismissSong, getRecommendations } from "../lib/api/recommend.functions";
 import { addToLearning, getLearningIds, removeFromLearning } from "../lib/api/learning.functions";
+import { likeSong, unlikeSong } from "../lib/api/likes.functions";
 import { AddSongDialog, type AddTarget } from "../components/sp/AddSongDialog";
 import {
   AquaGhost,
@@ -42,6 +43,30 @@ function Discover() {
   const [addTarget, setAddTarget] = useState<AddTarget | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [learningIds, setLearningIds] = useState<Set<number>>(new Set(data.learningIds));
+  // Liked songs are excluded from the feed server-side, so every card starts
+  // unliked — this only tracks hearts tapped during this session.
+  const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
+
+  async function toggleLike(songId: number) {
+    const has = likedIds.has(songId);
+    setLikedIds((prev) => {
+      const next = new Set(prev);
+      if (has) next.delete(songId);
+      else next.add(songId);
+      return next;
+    });
+    try {
+      if (has) await unlikeSong({ data: { songId } });
+      else await likeSong({ data: { songId } });
+    } catch {
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (has) next.add(songId);
+        else next.delete(songId);
+        return next;
+      });
+    }
+  }
 
   // keep local list in sync when the loader reloads (after refresh)
   const loaderKey = useMemo(() => data.recs.map((r) => r.song.id).join(","), [data.recs]);
@@ -178,9 +203,11 @@ function Discover() {
               rec={rec}
               playing={activeId === rec.song.id}
               isLearning={learningIds.has(rec.song.id)}
+              isLiked={likedIds.has(rec.song.id)}
               onToggle={toggle}
               onEnterView={onEnterView}
               onToggleLearning={() => toggleLearning(rec.song.id)}
+              onToggleLike={() => toggleLike(rec.song.id)}
               onAdd={() => openAdd(rec)}
               onSkip={() => skip(rec)}
             />
@@ -243,18 +270,22 @@ function FeedCard({
   rec,
   playing,
   isLearning,
+  isLiked,
   onToggle,
   onEnterView,
   onToggleLearning,
+  onToggleLike,
   onAdd,
   onSkip,
 }: {
   rec: Recommendation;
   playing: boolean;
   isLearning: boolean;
+  isLiked: boolean;
   onToggle: (songId: number, url: string) => void;
   onEnterView: (songId: number, url: string) => void;
   onToggleLearning: () => void;
+  onToggleLike: () => void;
   onAdd: () => void;
   onSkip: () => void;
 }) {
@@ -421,6 +452,29 @@ function FeedCard({
               </svg>
               Add to my songs
             </SolidCoral>
+            <button
+              onClick={onToggleLike}
+              aria-label={isLiked ? "Unlike this song" : "Like this song"}
+              title={isLiked ? "Liked — we'll tune your feed" : "Like this song"}
+              className={cx(
+                "inline-flex items-center gap-1.5 rounded-full border px-4 py-3 text-sm font-semibold backdrop-blur transition active:scale-[0.97]",
+                isLiked
+                  ? "border-[var(--sp-coral)] bg-[var(--sp-coral)]/20 text-[var(--sp-coral)]"
+                  : "border-white/25 bg-black/30 text-white/85 hover:bg-black/50",
+              )}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill={isLiked ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 20.5 4.6 13a4.6 4.6 0 1 1 6.5-6.5l.9.9.9-.9A4.6 4.6 0 1 1 19.4 13z" />
+              </svg>
+              {rec.likes + (isLiked ? 1 : 0) || ""}
+            </button>
             <button
               onClick={onToggleLearning}
               aria-label={isLearning ? "Remove from Learning" : "Add to Learning"}
