@@ -450,6 +450,97 @@ export function DifficultyRater({
   );
 }
 
+/* ── Star rating (1..5) ───────────────────────────────────────────────── */
+const STAR_GOLD = "#ffc24b";
+const STAR_PATH =
+  "M12 2.5l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.3l-5.8 3.06 1.1-6.46-4.69-4.58 6.49-.94z";
+
+function StarGlyph({ filled, size = 16 }: { filled: boolean; size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={filled ? STAR_GOLD : "none"}
+      stroke={filled ? STAR_GOLD : "var(--sp-faint)"}
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d={STAR_PATH} />
+    </svg>
+  );
+}
+
+// Interactive rater. `value` is the current rating (0 = unrated); clicking the
+// current star again clears it (onChange(0)).
+export function StarRating({
+  value,
+  onChange,
+  disabled = false,
+  size = 30,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+  size?: number;
+}) {
+  const [hover, setHover] = useState(0);
+  const shown = hover || value;
+  return (
+    <div
+      className="inline-flex items-center gap-1"
+      onMouseLeave={() => setHover(0)}
+    >
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          disabled={disabled}
+          onMouseEnter={() => setHover(n)}
+          onFocus={() => setHover(n)}
+          onBlur={() => setHover(0)}
+          onClick={() => onChange(n === value ? 0 : n)}
+          aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
+          aria-pressed={n <= value}
+          className="rounded-md p-0.5 transition hover:scale-110 active:scale-95 disabled:opacity-60"
+        >
+          <StarGlyph filled={n <= shown} size={size} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Read-only community average — rounds to the nearest star for the glyphs and
+// prints the precise average + count beside them.
+export function StarsReadout({
+  value,
+  count,
+  size = 14,
+  className,
+}: {
+  value: number;
+  count: number;
+  size?: number;
+  className?: string;
+}) {
+  const rounded = Math.round(value);
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="inline-flex items-center gap-0.5" aria-hidden>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <StarGlyph key={n} filled={n <= rounded} size={size} />
+        ))}
+      </span>
+      <span className={cx("text-xs font-medium text-[var(--sp-muted)]", className)}>
+        {value.toFixed(1)}
+        <span className="opacity-60"> ({count})</span>
+      </span>
+    </span>
+  );
+}
+
 /* ── Misc ─────────────────────────────────────────────────────────────── */
 export function Spinner({ className }: { className?: string }) {
   return (

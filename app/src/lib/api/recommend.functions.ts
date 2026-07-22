@@ -30,8 +30,16 @@ export const getRecommendations = createServerFn({ method: "GET" })
     const me = await requireUser();
     const database = db();
 
-    const [songsRes, instRes, userSongsRes, userInstRes, dismissedRes, friendshipsRes, likesRes] =
-      await Promise.all([
+    const [
+      songsRes,
+      instRes,
+      userSongsRes,
+      userInstRes,
+      dismissedRes,
+      friendshipsRes,
+      likesRes,
+      ratingsRes,
+    ] = await Promise.all([
         database
           .prepare("SELECT id, title, artist, genre, year, hue, artwork_url, preview_url FROM songs")
           .all<SongMeta>(),
@@ -55,6 +63,9 @@ export const getRecommendations = createServerFn({ method: "GET" })
         database
           .prepare("SELECT user_id, song_id FROM song_likes")
           .all<{ user_id: number; song_id: number }>(),
+        database
+          .prepare("SELECT user_id, song_id, rating FROM song_ratings")
+          .all<{ user_id: number; song_id: number; rating: number }>(),
       ]);
 
     const songMeta = new Map<number, SongMeta>();
@@ -93,6 +104,31 @@ export const getRecommendations = createServerFn({ method: "GET" })
       if (!songLikers.has(r.song_id)) songLikers.set(r.song_id, new Set());
       songLikers.get(r.song_id)!.add(r.user_id);
     }
+
+    // Star ratings (1..5) — a graded quality signal. Unlike a like (a binary
+    // "more like this" that removes the song from your feed), a rating says how
+    // GOOD the song is. It drives a community-quality nudge in ranking below; it
+    // does NOT change who-is-similar-to-me and never hides a song.
+    const songRatingSum = new Map<number, number>();
+    const songRatingCount = new Map<number, number>();
+    let ratingTotal = 0;
+    let ratingN = 0;
+    for (const r of ratingsRes.results ?? []) {
+      songRatingSum.set(r.song_id, (songRatingSum.get(r.song_id) ?? 0) + r.rating);
+      songRatingCount.set(r.song_id, (songRatingCount.get(r.song_id) ?? 0) + 1);
+      ratingTotal += r.rating;
+      ratingN += 1;
+    }
+    const globalMeanRating = ratingN > 0 ? ratingTotal / ratingN : 3;
+    const RATING_PRIOR = 4; // pretend every song carries 4 votes at the global mean
+    // Bayesian ("true") average — pulls thin-sample songs toward the mean so a
+    // lone 5★ can't outrank a track many people rated well. Equals the global
+    // mean when a song has no ratings, making the nudge a no-op there.
+    const bayesRating = (id: number): number => {
+      const n = songRatingCount.get(id) ?? 0;
+      if (n === 0) return globalMeanRating;
+      return (RATING_PRIOR * globalMeanRating + (songRatingSum.get(id) ?? 0)) / (RATING_PRIOR + n);
+    };
 
     const mySongs = perUserSongs.get(me.id) ?? new Set<number>();
     const myInsts = perUserInsts.get(me.id) ?? new Set<number>();
@@ -169,7 +205,11 @@ export const getRecommendations = createServerFn({ method: "GET" })
     // Candidates: anything someone plays OR likes (a song can surface purely on
     // likes, before anyone here can play it). Liking removes a song from your
     // future feeds — it has already done its job as a signal.
-    const candidateIds = new Set<number>([...songPlayers.keys(), ...songLikers.keys()]);
+    const candidateIds = new Set<number>([
+      ...songPlayers.keys(),
+      ...songLikers.keys(),
+      ...songRatingCount.keys(),
+    ]);
     for (const id of candidateIds) {
       if (mySongs.has(id) || dismissed.has(id) || myLikes.has(id) || !songMeta.has(id)) continue;
       const players = songPlayers.get(id) ?? new Set<number>();
@@ -190,9 +230,13 @@ export const getRecommendations = createServerFn({ method: "GET" })
       const popularity = 0.04 * Math.log(1 + players.size);
       // instrument-fit nudge (helps cold start feel personal)
       const instFit = matchingInstrumentsFor(id).length > 0 ? 0.06 : 0;
+      // community-quality nudge: reward songs the community rates above the mean
+      // and gently demote below-mean ones. Small enough to only break ties /
+      // reorder — relevance (score) still decides what makes the feed at all.
+      const quality = 0.08 * (bayesRating(id) - globalMeanRating);
 
       if (anySimilarity && score <= 0 && instFit === 0) continue; // keep the feed relevant
-      scored.push({ id, score: score + popularity + instFit, sharedWith });
+      scored.push({ id, score: score + popularity + instFit + quality, sharedWith });
     }
 
     scored.sort((a, b) => {
@@ -301,6 +345,7 @@ export const getRecommendations = createServerFn({ method: "GET" })
     return top.map(({ id, score, sharedWith }): Recommendation => {
       const matchingInstruments = matchingInstrumentsFor(id);
       const friendsPlaying = buildFriends(id);
+      const rc = songRatingCount.get(id) ?? 0;
       let reason: string;
       if (friendsPlaying.length > 0) {
         reason =
@@ -328,6 +373,8 @@ export const getRecommendations = createServerFn({ method: "GET" })
         tags: tagsBySong.get(id) ?? [],
         friendsPlaying,
         likes: songLikers.get(id)?.size ?? 0,
+        ratingAvg: rc > 0 ? (songRatingSum.get(id) ?? 0) / rc : null,
+        ratingCount: rc,
       };
     });
   });

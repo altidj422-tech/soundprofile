@@ -14,6 +14,7 @@ import {
   InstrumentChip,
   PrimaryCTA,
   SongCover,
+  StarsReadout,
   cx,
 } from "../components/sp/ui";
 
@@ -367,7 +368,7 @@ function FeedCard({
   onToggleLike: () => void;
   onAdd: () => void;
 }) {
-  const { song, matchingInstruments, tags, friendsPlaying } = rec;
+  const { song, matchingInstruments, tags, friendsPlaying, ratingAvg, ratingCount } = rec;
   const articleRef = useRef<HTMLElement | null>(null);
 
   // Auto-play this card's preview when it scrolls into view (parent decides
@@ -458,6 +459,18 @@ function FeedCard({
                 </div>
               </div>
             </div>
+            {ratingCount > 0 && (
+              <div className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.07] px-3.5 py-2.5">
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-white/60">
+                    Community rating
+                  </div>
+                  <div className="mt-1">
+                    <StarsReadout value={ratingAvg ?? 0} count={ratingCount} size={15} className="text-white/85" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {tags.length > 0 && (

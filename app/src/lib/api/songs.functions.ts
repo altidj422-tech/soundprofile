@@ -176,6 +176,17 @@ export const getSongDetail = createServerFn({ method: "GET" })
           .first<{ x: number }>()
       : null;
 
+    const ratingAgg = await database
+      .prepare("SELECT AVG(rating) AS avg, COUNT(*) AS n FROM song_ratings WHERE song_id = ?")
+      .bind(data.songId)
+      .first<{ avg: number | null; n: number }>();
+    const myRatingRow = viewer
+      ? await database
+          .prepare("SELECT rating FROM song_ratings WHERE song_id = ? AND user_id = ?")
+          .bind(data.songId, viewer.id)
+          .first<{ rating: number }>()
+      : null;
+
     return {
       song,
       players,
@@ -183,6 +194,9 @@ export const getSongDetail = createServerFn({ method: "GET" })
       mine,
       likes: likeCount?.n ?? 0,
       likedByMe: !!likedRow,
+      ratingAvg: ratingAgg?.avg ?? null,
+      ratingCount: ratingAgg?.n ?? 0,
+      myRating: myRatingRow?.rating ?? 0,
     };
   });
 

@@ -125,6 +125,8 @@ export interface Recommendation {
   tags: TechniqueTag[]; // community technique tags on this song
   friendsPlaying: FeedFriend[]; // your friends who play this song
   likes: number; // how many musicians have liked this song
+  ratingAvg: number | null; // community star average (1..5), null if unrated
+  ratingCount: number; // how many musicians have rated this song
 }
 
 export interface SongPlayer {
@@ -143,6 +145,9 @@ export interface SongDetail {
   mine: MySong[];
   likes: number;
   likedByMe: boolean;
+  ratingAvg: number | null; // community star average (1..5), null if unrated
+  ratingCount: number; // how many musicians have rated this song
+  myRating: number; // the viewer's own rating 1..5, 0 = not rated
 }
 
 export interface SearchSong extends SongStat {

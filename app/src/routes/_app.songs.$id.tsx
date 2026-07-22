@@ -7,6 +7,7 @@ import { getComments } from "../lib/api/comments.functions";
 import { addToLearning, getLearningIds, removeFromLearning } from "../lib/api/learning.functions";
 import { likeSong, unlikeSong } from "../lib/api/likes.functions";
 import { getInstruments, getMyProfile } from "../lib/api/profile.functions";
+import { rateSong, unrateSong } from "../lib/api/ratings.functions";
 import { getSongDetail, removeUserSong } from "../lib/api/songs.functions";
 import { getSongTutorial } from "../lib/api/tutorials.functions";
 import { AddSongDialog } from "../components/sp/AddSongDialog";
@@ -21,6 +22,8 @@ import {
   PrimaryCTA,
   QuietGlass,
   SongCover,
+  StarRating,
+  StarsReadout,
   cx,
 } from "../components/sp/ui";
 
@@ -70,6 +73,25 @@ function SongPage() {
   const [liked, setLiked] = useState(detail?.likedByMe ?? false);
   const [likeCount, setLikeCount] = useState(detail?.likes ?? 0);
   const [likeBusy, setLikeBusy] = useState(false);
+  const [myRating, setMyRating] = useState(detail?.myRating ?? 0);
+  const [ratingBusy, setRatingBusy] = useState(false);
+
+  async function rate(songId: number, next: number) {
+    if (ratingBusy || next === myRating) return;
+    const prev = myRating;
+    setMyRating(next);
+    setRatingBusy(true);
+    try {
+      if (next === 0) await unrateSong({ data: { songId } });
+      else await rateSong({ data: { songId, rating: next } });
+      // pull the fresh community average back down from the server
+      router.invalidate();
+    } catch {
+      setMyRating(prev);
+    } finally {
+      setRatingBusy(false);
+    }
+  }
 
   async function toggleLike(songId: number) {
     if (likeBusy) return;
@@ -230,6 +252,51 @@ function SongPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Rate this song */}
+      <div className="sp-card mt-6 flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--sp-faint)]">
+            {canContribute ? (myRating ? "Your rating" : "Rate this song") : "Community rating"}
+          </div>
+          {canContribute ? (
+            <div className="mt-1.5 flex items-center gap-3">
+              <StarRating value={myRating} onChange={(n) => rate(song.id, n)} disabled={ratingBusy} />
+              {myRating > 0 && (
+                <button
+                  onClick={() => rate(song.id, 0)}
+                  disabled={ratingBusy}
+                  className="text-xs font-medium text-[var(--sp-faint)] transition hover:text-[var(--sp-coral)] disabled:opacity-60"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="mt-1.5">
+              {detail.ratingCount > 0 ? (
+                <StarsReadout value={detail.ratingAvg ?? 0} count={detail.ratingCount} size={18} />
+              ) : (
+                <span className="text-sm text-[var(--sp-faint)]">Not rated yet</span>
+              )}
+            </div>
+          )}
+        </div>
+        {canContribute && (
+          <div className="text-right">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--sp-faint)]">
+              Community
+            </div>
+            <div className="mt-1.5">
+              {detail.ratingCount > 0 ? (
+                <StarsReadout value={detail.ratingAvg ?? 0} count={detail.ratingCount} size={16} />
+              ) : (
+                <span className="text-sm text-[var(--sp-faint)]">Be the first</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Your entries */}
