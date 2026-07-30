@@ -10,7 +10,6 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportHiggsfieldError } from "../lib/higgsfield-error-reporting";
 // Page metadata (browser <title>/favicon + social og: tags) committed into the
 // repo by the marketplace meta API and read at BUILD time — no runtime fetch.
 // Editing it via the app settings UI rewrites this file and redeploys the app.
@@ -127,9 +126,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportHiggsfieldError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-dvh items-center justify-center px-4">
@@ -199,12 +195,7 @@ function RootComponent() {
         installHiggsfieldDesignInspector();
       })
       .catch((error) => {
-        reportHiggsfieldError(
-          error instanceof Error ? error : new Error("Failed to load design inspector"),
-          {
-            boundary: "higgsfield_design_inspector_import",
-          },
-        );
+        console.error("Failed to load design inspector", error);
       });
   }, []);
 
