@@ -8,9 +8,9 @@
   // in LOCAL mode against a local SQLite mirror) and production (`wrangler
   // deploy`, which uses the real D1 below).
   //
-  // Worker name — lowercase + dashes, 3–63 chars. Determines the workers.dev
-  // subdomain (soundprofile.<account>.workers.dev) before you attach a domain.
-  "name": "soundprofile",
+  // Worker name — lowercase + dashes, 3–63 chars. This is the FIRST label of the
+  // workers.dev URL: app.<account-subdomain>.workers.dev.
+  "name": "app",
 
   // The Worker entry is the TanStack Start SSR server bundle — `vite build`
   // emits dist/server/server.js (`export default { fetch }`).

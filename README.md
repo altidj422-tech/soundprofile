@@ -69,7 +69,7 @@ bun run d1:migrate           # applies migrations/ to the remote D1
 bun run deploy               # builds and deploys the Worker
 ```
 
-Your app is now live at `https://soundprofile.<your-account>.workers.dev`. To
+Your app is now live at `https://app.<your-account>.workers.dev`. To
 ship updates later, just run `bun run deploy` again.
 
 Want a custom name instead of `*.workers.dev`? Register a domain (~$10/yr — the
