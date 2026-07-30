@@ -9,14 +9,19 @@
   "scripts": {
     "dev": "vite dev",
     "dev:design": "HF_DESIGN_INSPECTOR=1 vite dev --mode design",
-    "build": "tsc --noEmit & p1=$!; vite build & p2=$!; wait $p1 && wait $p2",
+    "build": "tsc --noEmit && vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "typecheck:packages": "for dir in packages/*; do if [ -f \"$dir/package.json\" ]; then (cd \"$dir\" && bun run typecheck); fi; done",
-    "test:packages": "for dir in packages/*; do if [ -f \"$dir/package.json\" ]; then (cd \"$dir\" && bun run test); fi; done"
+    "test:packages": "for dir in packages/*; do if [ -f \"$dir/package.json\" ]; then (cd \"$dir\" && bun run test); fi; done",
+    "deploy": "bun run build && wrangler deploy",
+    "d1:create": "wrangler d1 create soundprofile",
+    "d1:migrate": "wrangler d1 migrations apply soundprofile --remote",
+    "d1:migrate:local": "wrangler d1 migrations apply soundprofile --local",
+    "d1:console": "wrangler d1 execute soundprofile --remote --command \"SELECT name FROM sqlite_master WHERE type='table';\""
   },
   "dependencies": {
     "@higgsfield/fnf": "workspace:*",
@@ -95,7 +100,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^7.3.1",
-    "vite-plugin-svgr": "^5.2.0"
+    "vite-plugin-svgr": "^5.2.0",
+    "wrangler": "^4.0.0"
   },
   "overrides": {
     "@types/react": "19.2.15"

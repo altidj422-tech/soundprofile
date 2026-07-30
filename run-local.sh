@@ -32,7 +32,7 @@ echo "→ Setting up the local database (schema + demo community)…"
 # Apply every migration in order. Re-runs are tolerated (|| true): additive
 # ALTER/CREATE statements simply error out harmlessly the second time.
 for f in migrations/[0-9]*.sql; do
-  bunx wrangler d1 execute soundprofile-local --local --config wrangler.jsonc --file="$f" >/dev/null 2>&1 || true
+  bunx wrangler d1 execute soundprofile --local --config wrangler.jsonc --file="$f" >/dev/null 2>&1 || true
 done
 
 echo ""
