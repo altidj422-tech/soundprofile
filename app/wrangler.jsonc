@@ -19,6 +19,20 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
 
+  // Keep the free workers.dev URL (app.soundprofile.workers.dev) enabled too —
+  // adding the custom routes below would otherwise disable it. Handy as a
+  // fallback while the custom-domain SSL certificate provisions.
+  "workers_dev": true,
+
+  // Custom domain — soundprofile.org (registered via Cloudflare Registrar, so its
+  // DNS zone is already in this account). custom_domain:true tells Cloudflare to
+  // create the proxied DNS record + SSL cert and route the hostname to this
+  // Worker. SSL can take a few minutes to activate after the first deploy.
+  "routes": [
+    { "pattern": "soundprofile.org", "custom_domain": true },
+    { "pattern": "www.soundprofile.org", "custom_domain": true }
+  ],
+
   // SSR asset routing: static files in dist/client serve directly (asset-first);
   // any non-asset path — incl. "/" — falls through to the SSR Worker (no
   // index.html ships, so "/" never matches an asset). Do NOT set
