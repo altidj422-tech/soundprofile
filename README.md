@@ -47,6 +47,21 @@ That builds the app, seeds a local D1 database (instruments, songs, a demo
 community), and serves it at **http://localhost:8787**. First run installs
 [Bun](https://bun.sh) + dependencies automatically.
 
+## Tests
+
+From the `app/` folder:
+
+```bash
+bun run test
+```
+
+Unit tests for the logic that needs no database or request context: password
+hashing and verification, reputation thresholds, catalog labels and cover-art
+gradients, and the `catalogKey` that client and server must compute identically.
+They use Node 24's built-in test runner — no test framework, no extra
+dependency — and run in CI alongside the typecheck and build. What is not
+covered yet is tracked in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+
 ## Deploy (free, on Cloudflare)
 
 Everything runs on Cloudflare's **free tier** — Workers + D1. No paid plan, no
