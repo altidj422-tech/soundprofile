@@ -57,13 +57,25 @@ cleanup · 🟢 fine for now, revisit at scale.
 - **Fix:** Move avatars to R2 (object storage) and store a URL, or stop
   selecting `avatar_url` in the hot session query and fetch it separately.
 
-### 🟡 No automated test suite
-- **What:** Confidence is from manual verification, not tests. A future change
+### 🟡 No automated test suite — PARTLY ADDRESSED (2026-10-09)
+- **What:** Confidence was from manual verification, not tests. A future change
   could regress something silently.
-- **Fix:** Add tests around the highest-risk logic first — auth
-  (`password.server.ts`, `session.server.ts`), reputation/ban
-  (`annotations.functions.ts`, `rep.server.ts`), and the recommender
-  (`recommend.functions.ts`).
+- **Shipped:** `bun run test` (also run in CI) — 41 cases over the pure,
+  D1-free logic, using Node 24's built-in test runner, so no test framework and
+  no new dependency were added:
+  - `src/lib/__tests__/password.server.test.ts` — PBKDF2 round-trip, wrong
+    password, cross-salt rejection, missing hash/salt, unicode passphrases.
+  - `src/lib/__tests__/reputation.test.ts` — moderator and ban thresholds, and
+    that no reputation can be both bannable and moderator.
+  - `src/lib/__tests__/catalog.test.ts` — difficulty/skill labels, SSR-safe
+    `shortDate`, and gradient determinism and hue wrapping (a hydration-mismatch
+    class of bug).
+  - `src/lib/__tests__/itunes.test.ts` — `catalogKey`, which client and server
+    must compute identically or songs duplicate in the catalog.
+- **Still open:** anything needing a D1 binding or a request context —
+  `session.server.ts`, `annotations.functions.ts` (vote/takeover/ban), and
+  `recommend.functions.ts`. Those need a `wrangler d1 --local` fixture or a
+  fake `D1Database`; neither exists yet.
 
 **Audited and found HEALTHY (no action needed):** parameterized SQL everywhere
 (no injection), PBKDF2 password hashing (100k iterations, per-user salt,

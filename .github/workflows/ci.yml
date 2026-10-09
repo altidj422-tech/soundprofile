@@ -20,11 +20,23 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
+      # Node 24 runs the unit tests below. It strips TypeScript types natively,
+      # so the suite needs no test framework and no extra dependency.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Typecheck
         run: bun run typecheck
+
+      # Unit tests for the pure, dependency-free logic: password hashing and
+      # verification, reputation thresholds, catalog labels and cover-art
+      # gradients, and the catalog key shared by client and server.
+      - name: Unit tests
+        run: bun run test
 
       # Build the same artifact we deploy — the design inspector is OFF (the
       # self-hosted deploy does not set HF_DESIGN_INSPECTOR). A green build here
